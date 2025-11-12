@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @State private var log: String = ""
@@ -38,10 +39,8 @@ struct ContentView: View {
             }
 
             ScrollView {
-                Text(log)
-                    .font(.system(.footnote, design: .monospaced))
+                LogTextView(text: log)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .textSelection(.enabled)
                     .padding(4)
             }
             .border(Color.secondary)
@@ -118,7 +117,23 @@ struct ContentView: View {
     }
 }
 
-//
-//#Preview {
-//    ContentView()
-//}
+
+struct LogTextView: UIViewRepresentable {
+    let text: String
+
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.isScrollEnabled = false  // outer SwiftUI ScrollView handles scrolling
+        textView.backgroundColor = .clear
+        textView.font = UIFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        textView.textContainerInset = UIEdgeInsets(top: 4, left: 0, bottom: 4, right: 0)
+        textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return textView
+    }
+
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        uiView.text = text
+    }
+}
