@@ -41,6 +41,7 @@ struct ContentView: View {
                 Text(log)
                     .font(.system(.footnote, design: .monospaced))
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
                     .padding(4)
             }
             .border(Color.secondary)
@@ -82,7 +83,7 @@ struct ContentView: View {
             }
         }
         for (tag, kana) in cases {
-            log.append("[Case] \(tag)\n")
+            onLog?("[Case] \(tag)")
             await runBenchmarksFor(groupTag: tag, kanaInput: kana, env: env)
         }
     }
