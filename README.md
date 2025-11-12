@@ -8,5 +8,5 @@
 ## ベンチマーク (Core ML greedy decoding) / 벤치마크 (Core ML greedy decoding) / Benchmarks (Core ML greedy decoding)
 
 Detailed benchmark results for Round 1 and Round 2 are available here:  
-[Round 1 details](benchmarks/round1-iPhone12.md)  
-[Round 2 details](benchmarks/round2-iPhoneAir.md)
+[iPhone 12 details](benchmarks/round1-iPhone12.md)  
+[iPhone Air details](benchmarks/round2-iPhoneAir.md)
