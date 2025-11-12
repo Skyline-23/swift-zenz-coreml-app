@@ -9,4 +9,4 @@
 
 Detailed benchmark results for Round 1 and Round 2 are available here:  
 [iPhone 12 details](benchmarks/round1-iPhone12.md)  
-[iPhone Air details](benchmarks/round2-iPhoneAir.md)
+[iPhone Air details](benchmarks/round1-iPhoneAir.md)
