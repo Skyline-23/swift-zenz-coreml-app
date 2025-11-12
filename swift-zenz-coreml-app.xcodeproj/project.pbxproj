@@ -1,0 +1,631 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D03050432EC469CB00E9E19A /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = D03050422EC469CB00E9E19A /* Hub */; };
+		D03050452EC469CB00E9E19A /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = D03050442EC469CB00E9E19A /* Tokenizers */; };
+		D03050472EC469CB00E9E19A /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = D03050462EC469CB00E9E19A /* Transformers */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D03050132EC4693B00E9E19A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0304FFD2EC4693900E9E19A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D03050042EC4693900E9E19A;
+			remoteInfo = "swift-zenz-coreml-app";
+		};
+		D030501D2EC4693B00E9E19A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0304FFD2EC4693900E9E19A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D03050042EC4693900E9E19A;
+			remoteInfo = "swift-zenz-coreml-app";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		D03050052EC4693900E9E19A /* swift-zenz-coreml-app.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "swift-zenz-coreml-app.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D03050122EC4693B00E9E19A /* swift-zenz-coreml-appTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "swift-zenz-coreml-appTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D030501C2EC4693B00E9E19A /* swift-zenz-coreml-appUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "swift-zenz-coreml-appUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		D03050072EC4693900E9E19A /* swift-zenz-coreml-app */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "swift-zenz-coreml-app";
+			sourceTree = "<group>";
+		};
+		D03050152EC4693B00E9E19A /* swift-zenz-coreml-appTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "swift-zenz-coreml-appTests";
+			sourceTree = "<group>";
+		};
+		D030501F2EC4693B00E9E19A /* swift-zenz-coreml-appUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "swift-zenz-coreml-appUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D03050022EC4693900E9E19A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D03050472EC469CB00E9E19A /* Transformers in Frameworks */,
+				D03050452EC469CB00E9E19A /* Tokenizers in Frameworks */,
+				D03050432EC469CB00E9E19A /* Hub in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D030500F2EC4693B00E9E19A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03050192EC4693B00E9E19A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D0304FFC2EC4693900E9E19A = {
+			isa = PBXGroup;
+			children = (
+				D03050072EC4693900E9E19A /* swift-zenz-coreml-app */,
+				D03050152EC4693B00E9E19A /* swift-zenz-coreml-appTests */,
+				D030501F2EC4693B00E9E19A /* swift-zenz-coreml-appUITests */,
+				D03050062EC4693900E9E19A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D03050062EC4693900E9E19A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D03050052EC4693900E9E19A /* swift-zenz-coreml-app.app */,
+				D03050122EC4693B00E9E19A /* swift-zenz-coreml-appTests.xctest */,
+				D030501C2EC4693B00E9E19A /* swift-zenz-coreml-appUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D03050042EC4693900E9E19A /* swift-zenz-coreml-app */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D03050262EC4693B00E9E19A /* Build configuration list for PBXNativeTarget "swift-zenz-coreml-app" */;
+			buildPhases = (
+				D03050012EC4693900E9E19A /* Sources */,
+				D03050022EC4693900E9E19A /* Frameworks */,
+				D03050032EC4693900E9E19A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D03050072EC4693900E9E19A /* swift-zenz-coreml-app */,
+			);
+			name = "swift-zenz-coreml-app";
+			packageProductDependencies = (
+				D03050422EC469CB00E9E19A /* Hub */,
+				D03050442EC469CB00E9E19A /* Tokenizers */,
+				D03050462EC469CB00E9E19A /* Transformers */,
+			);
+			productName = "swift-zenz-coreml-app";
+			productReference = D03050052EC4693900E9E19A /* swift-zenz-coreml-app.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D03050112EC4693B00E9E19A /* swift-zenz-coreml-appTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D03050292EC4693B00E9E19A /* Build configuration list for PBXNativeTarget "swift-zenz-coreml-appTests" */;
+			buildPhases = (
+				D030500E2EC4693B00E9E19A /* Sources */,
+				D030500F2EC4693B00E9E19A /* Frameworks */,
+				D03050102EC4693B00E9E19A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D03050142EC4693B00E9E19A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D03050152EC4693B00E9E19A /* swift-zenz-coreml-appTests */,
+			);
+			name = "swift-zenz-coreml-appTests";
+			packageProductDependencies = (
+			);
+			productName = "swift-zenz-coreml-appTests";
+			productReference = D03050122EC4693B00E9E19A /* swift-zenz-coreml-appTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D030501B2EC4693B00E9E19A /* swift-zenz-coreml-appUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D030502C2EC4693B00E9E19A /* Build configuration list for PBXNativeTarget "swift-zenz-coreml-appUITests" */;
+			buildPhases = (
+				D03050182EC4693B00E9E19A /* Sources */,
+				D03050192EC4693B00E9E19A /* Frameworks */,
+				D030501A2EC4693B00E9E19A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D030501E2EC4693B00E9E19A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D030501F2EC4693B00E9E19A /* swift-zenz-coreml-appUITests */,
+			);
+			name = "swift-zenz-coreml-appUITests";
+			packageProductDependencies = (
+			);
+			productName = "swift-zenz-coreml-appUITests";
+			productReference = D030501C2EC4693B00E9E19A /* swift-zenz-coreml-appUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D0304FFD2EC4693900E9E19A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2610;
+				LastUpgradeCheck = 2610;
+				TargetAttributes = {
+					D03050042EC4693900E9E19A = {
+						CreatedOnToolsVersion = 26.1;
+					};
+					D03050112EC4693B00E9E19A = {
+						CreatedOnToolsVersion = 26.1;
+						TestTargetID = D03050042EC4693900E9E19A;
+					};
+					D030501B2EC4693B00E9E19A = {
+						CreatedOnToolsVersion = 26.1;
+						TestTargetID = D03050042EC4693900E9E19A;
+					};
+				};
+			};
+			buildConfigurationList = D03050002EC4693900E9E19A /* Build configuration list for PBXProject "swift-zenz-coreml-app" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D0304FFC2EC4693900E9E19A;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D03050062EC4693900E9E19A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D03050042EC4693900E9E19A /* swift-zenz-coreml-app */,
+				D03050112EC4693B00E9E19A /* swift-zenz-coreml-appTests */,
+				D030501B2EC4693B00E9E19A /* swift-zenz-coreml-appUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D03050032EC4693900E9E19A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03050102EC4693B00E9E19A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D030501A2EC4693B00E9E19A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D03050012EC4693900E9E19A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D030500E2EC4693B00E9E19A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03050182EC4693B00E9E19A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D03050142EC4693B00E9E19A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D03050042EC4693900E9E19A /* swift-zenz-coreml-app */;
+			targetProxy = D03050132EC4693B00E9E19A /* PBXContainerItemProxy */;
+		};
+		D030501E2EC4693B00E9E19A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D03050042EC4693900E9E19A /* swift-zenz-coreml-app */;
+			targetProxy = D030501D2EC4693B00E9E19A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		D03050242EC4693B00E9E19A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = Q23JLSJCCV;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		D03050252EC4693B00E9E19A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = Q23JLSJCCV;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D03050272EC4693B00E9E19A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q23JLSJCCV;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.skyline23.swift-zenz-coreml-app";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D03050282EC4693B00E9E19A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q23JLSJCCV;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.skyline23.swift-zenz-coreml-app";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D030502A2EC4693B00E9E19A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q23JLSJCCV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.skyline23.swift-zenz-coreml-appTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/swift-zenz-coreml-app.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/swift-zenz-coreml-app";
+			};
+			name = Debug;
+		};
+		D030502B2EC4693B00E9E19A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q23JLSJCCV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.skyline23.swift-zenz-coreml-appTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/swift-zenz-coreml-app.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/swift-zenz-coreml-app";
+			};
+			name = Release;
+		};
+		D030502D2EC4693B00E9E19A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q23JLSJCCV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.skyline23.swift-zenz-coreml-appUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "swift-zenz-coreml-app";
+			};
+			name = Debug;
+		};
+		D030502E2EC4693B00E9E19A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q23JLSJCCV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.skyline23.swift-zenz-coreml-appUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "swift-zenz-coreml-app";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D03050002EC4693900E9E19A /* Build configuration list for PBXProject "swift-zenz-coreml-app" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D03050242EC4693B00E9E19A /* Debug */,
+				D03050252EC4693B00E9E19A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D03050262EC4693B00E9E19A /* Build configuration list for PBXNativeTarget "swift-zenz-coreml-app" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D03050272EC4693B00E9E19A /* Debug */,
+				D03050282EC4693B00E9E19A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D03050292EC4693B00E9E19A /* Build configuration list for PBXNativeTarget "swift-zenz-coreml-appTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D030502A2EC4693B00E9E19A /* Debug */,
+				D030502B2EC4693B00E9E19A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D030502C2EC4693B00E9E19A /* Build configuration list for PBXNativeTarget "swift-zenz-coreml-appUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D030502D2EC4693B00E9E19A /* Debug */,
+				D030502E2EC4693B00E9E19A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-transformers";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D03050422EC469CB00E9E19A /* Hub */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Hub;
+		};
+		D03050442EC469CB00E9E19A /* Tokenizers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Tokenizers;
+		};
+		D03050462EC469CB00E9E19A /* Transformers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Transformers;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = D0304FFD2EC4693900E9E19A /* Project object */;
+}

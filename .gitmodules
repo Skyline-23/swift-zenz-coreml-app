@@ -1,0 +1,3 @@
+[submodule "swift-zenz-coreml-app/Resources"]
+	path = swift-zenz-coreml-app/Resources
+	url = https://github.com/Skyline-23/zenz-CoreML
