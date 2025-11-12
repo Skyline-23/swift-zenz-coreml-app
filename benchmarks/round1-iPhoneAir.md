@@ -21,7 +21,7 @@
 | Strategy | Avg latency (s) |
 |---|---:|
 | Stateful / Sync main | 0.139 |
-| **Stateless** / Sync main | **0.137** |
+| **Stateless / Sync main** | **0.137** |
 | Stateful / Async global | 0.155 |
 | Stateless / Async global | 0.162 |
 
