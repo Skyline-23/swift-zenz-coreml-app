@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import SwiftData
 
 @main
 struct swift_zenz_coreml_appApp: App {
@@ -14,5 +15,6 @@ struct swift_zenz_coreml_appApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: BenchmarkCase.self)
     }
 }
