@@ -1,6 +1,14 @@
 import SwiftUI
 import Charts
 
+private enum FloatingHUDConstants {
+    static let compactDiameter: CGFloat = 70
+    static let expandedHeight: CGFloat = 260
+    static let expandedWidthMax: CGFloat = 360
+    static let horizontalMargin: CGFloat = 8
+    static let toggleAnimation = Animation.spring(response: 0.3, dampingFraction: 0.78)
+}
+
 struct FloatingMemoryHUDOverlay: View {
     @ObservedObject var monitor: MemoryUsageMonitor
     let containerSize: CGSize
@@ -9,31 +17,34 @@ struct FloatingMemoryHUDOverlay: View {
     @State private var storedCenter: CGPoint? = nil
     @State private var dragOffset: CGSize = .zero
     
-    private let compactDiameter: CGFloat = 70
-    private let expandedHeight: CGFloat = 260
-    private let maxExpandedWidth: CGFloat = 360
-    private let margin: CGFloat = 16
-    private let toggleAnimation = Animation.spring(response: 0.3, dampingFraction: 0.78)
+    private let verticalMargin: CGFloat = 0
+    private var compactDiameter: CGFloat { FloatingHUDConstants.compactDiameter }
+    private var expandedHeight: CGFloat { FloatingHUDConstants.expandedHeight }
+    private var maxExpandedWidth: CGFloat { FloatingHUDConstants.expandedWidthMax }
+    private var horizontalMargin: CGFloat { FloatingHUDConstants.horizontalMargin }
+    private var toggleAnimation: Animation { FloatingHUDConstants.toggleAnimation }
     
     var body: some View {
         let cardSize = resolvedCardSize(in: containerSize, expanded: isExpanded)
         let baseCenter = storedCenter ?? defaultCenter(for: cardSize, in: containerSize)
-        let clampedCenter = clampCenter(baseCenter, cardSize: cardSize, in: containerSize)
+        let clampedCenter = snapCenter(baseCenter, cardSize: cardSize, in: containerSize)
         let dragAdjustedCenter = CGPoint(
             x: clampedCenter.x + dragOffset.width,
             y: clampedCenter.y + dragOffset.height
         )
         
-        Button {
+        FlexibleMemoryHUDView(
+            monitor: monitor,
+            isExpanded: isExpanded,
+            targetSize: cardSize
+        )
+        .scaleEffect(isExpanded ? 1 : 0.9, anchor: .center)
+        .animation(.spring(response: 0.4, dampingFraction: 0.72), value: isExpanded)
+        .contentShape(Rectangle())
+        .onTapGesture {
             withAnimation(toggleAnimation) {
                 isExpanded.toggle()
             }
-        } label: {
-            FlexibleMemoryHUDView(
-                monitor: monitor,
-                isExpanded: isExpanded,
-                targetSize: cardSize
-            )
         }
         .buttonStyle(.plain)
         .frame(width: cardSize.width, height: cardSize.height)
@@ -44,11 +55,11 @@ struct FloatingMemoryHUDOverlay: View {
         }
         .onChange(of: containerSize) { newValue in
             let nextCard = resolvedCardSize(in: newValue, expanded: isExpanded)
-            storedCenter = clampCenter(storedCenter ?? defaultCenter(for: nextCard, in: newValue), cardSize: nextCard, in: newValue)
+            storedCenter = snapCenter(storedCenter ?? defaultCenter(for: nextCard, in: newValue), cardSize: nextCard, in: newValue)
         }
         .onChange(of: isExpanded) { newValue in
             let nextCard = resolvedCardSize(in: containerSize, expanded: newValue)
-            storedCenter = clampCenter(storedCenter ?? defaultCenter(for: nextCard, in: containerSize), cardSize: nextCard, in: containerSize)
+            storedCenter = snapCenter(storedCenter ?? defaultCenter(for: nextCard, in: containerSize), cardSize: nextCard, in: containerSize)
         }
     }
     
@@ -62,14 +73,14 @@ struct FloatingMemoryHUDOverlay: View {
                     x: origin.x + value.translation.width,
                     y: origin.y + value.translation.height
                 )
-                storedCenter = clampCenter(finalCenter, cardSize: cardSize, in: containerSize)
+                storedCenter = snapCenter(finalCenter, cardSize: cardSize, in: containerSize)
                 dragOffset = .zero
             }
     }
     
     private func resolvedCardSize(in container: CGSize, expanded: Bool) -> CGSize {
         if expanded {
-            let width = min(max(container.width - (margin * 2), compactDiameter), maxExpandedWidth)
+            let width = min(max(container.width - (horizontalMargin * 2), compactDiameter), maxExpandedWidth)
             return CGSize(width: width, height: expandedHeight)
         } else {
             return CGSize(width: compactDiameter, height: compactDiameter)
@@ -78,24 +89,42 @@ struct FloatingMemoryHUDOverlay: View {
     
     private func defaultCenter(for cardSize: CGSize, in container: CGSize) -> CGPoint {
         CGPoint(
-            x: container.width - cardSize.width / 2 - margin,
-            y: container.height - cardSize.height / 2 - (margin * 2)
+            x: container.width - cardSize.width / 2 - horizontalMargin,
+            y: container.height - cardSize.height / 2 - (verticalMargin * 2)
         )
     }
     
-    private func clampCenter(_ point: CGPoint, cardSize: CGSize, in container: CGSize) -> CGPoint {
+    private func snapCenter(_ point: CGPoint, cardSize: CGSize, in container: CGSize) -> CGPoint {
         let halfWidth = cardSize.width / 2
         let halfHeight = cardSize.height / 2
-        let minX = halfWidth + margin
-        let maxX = max(container.width - halfWidth - margin, minX)
-        let minY = halfHeight + margin
-        let maxY = max(container.height - halfHeight - margin, minY)
+        let minY = halfHeight + verticalMargin
+        let maxY = max(container.height - halfHeight - verticalMargin, minY)
+        let anchor: HorizontalAnchor = point.x >= container.width / 2 ? .right : .left
+        let anchoredX = anchoredXPosition(for: anchor, cardSize: cardSize, in: container)
+        let clampedY = min(max(point.y, minY), maxY)
         return CGPoint(
-            x: min(max(point.x, minX), maxX),
-            y: min(max(point.y, minY), maxY)
+            x: anchoredX,
+            y: clampedY
         )
     }
     
+    private func anchoredXPosition(for anchor: HorizontalAnchor, cardSize: CGSize, in container: CGSize) -> CGFloat {
+        let halfWidth = cardSize.width / 2
+        let minX = halfWidth + horizontalMargin
+        let maxX = max(container.width - halfWidth - horizontalMargin, minX)
+        switch anchor {
+        case .left:
+            return minX
+        case .right:
+            return maxX
+        }
+    }
+    
+}
+
+private enum HorizontalAnchor {
+    case left
+    case right
 }
 
 private struct FlexibleMemoryHUDView: View {
