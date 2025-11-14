@@ -2,7 +2,8 @@ import SwiftUI
 import Charts
 
 private enum FloatingHUDConstants {
-    static let compactDiameter: CGFloat = 70
+    static let compactWidth: CGFloat = 140
+    static let compactHeight: CGFloat = 60
     static let expandedHeight: CGFloat = 260
     static let expandedWidthMax: CGFloat = 360
     static let horizontalMargin: CGFloat = 8
@@ -18,7 +19,8 @@ struct FloatingMemoryHUDOverlay: View {
     @State private var dragOffset: CGSize = .zero
     
     private let verticalMargin: CGFloat = 0
-    private var compactDiameter: CGFloat { FloatingHUDConstants.compactDiameter }
+    private var compactWidth: CGFloat { FloatingHUDConstants.compactWidth }
+    private var compactHeight: CGFloat { FloatingHUDConstants.compactHeight }
     private var expandedHeight: CGFloat { FloatingHUDConstants.expandedHeight }
     private var maxExpandedWidth: CGFloat { FloatingHUDConstants.expandedWidthMax }
     private var horizontalMargin: CGFloat { FloatingHUDConstants.horizontalMargin }
@@ -80,10 +82,10 @@ struct FloatingMemoryHUDOverlay: View {
     
     private func resolvedCardSize(in container: CGSize, expanded: Bool) -> CGSize {
         if expanded {
-            let width = min(max(container.width - (horizontalMargin * 2), compactDiameter), maxExpandedWidth)
+            let width = min(max(container.width - (horizontalMargin * 2), compactWidth), maxExpandedWidth)
             return CGSize(width: width, height: expandedHeight)
         } else {
-            return CGSize(width: compactDiameter, height: compactDiameter)
+            return CGSize(width: compactWidth, height: compactHeight)
         }
     }
     
@@ -150,22 +152,24 @@ private struct FlexibleMemoryHUDView: View {
     }
     
     private var compactContent: some View {
-        VStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 12) {
             Image(systemName: "memorychip")
-                .font(.title2.weight(.semibold))
+                .font(.title3.weight(.semibold))
                 .symbolRenderingMode(.hierarchical)
                 .padding(8)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(Color.white.opacity(0.12))
                 )
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(compactValueText)
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                Text("MB")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(compactValueText)
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                    Text("MB")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
