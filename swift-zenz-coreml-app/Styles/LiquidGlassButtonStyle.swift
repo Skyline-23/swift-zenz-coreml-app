@@ -80,8 +80,6 @@ private struct ModernGlassTile<S: Shape>: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
             .glassEffect(
                 .regular
                     .tint(tint.opacity(0.35))
