@@ -123,6 +123,92 @@ func argmaxLogitsRow(_ logits: MLMultiArray, batch: Int, time: Int) -> Int {
     }
 }
 
+protocol ZenzStatelessPredicting: AnyObject {
+    func logits(for inputIDs: MLMultiArray) throws -> MLMultiArray
+    func logitsAsync(for inputIDs: MLMultiArray) async throws -> MLMultiArray
+}
+
+extension zenz_v1: ZenzStatelessPredicting {
+    func logits(for inputIDs: MLMultiArray) throws -> MLMultiArray {
+        let input = zenz_v1Input(input_ids: inputIDs)
+        return try prediction(input: input).logits
+    }
+    func logitsAsync(for inputIDs: MLMultiArray) async throws -> MLMultiArray {
+        let input = zenz_v1Input(input_ids: inputIDs)
+        return try await prediction(input: input).logits
+    }
+}
+
+extension zenz_v1_8bit: ZenzStatelessPredicting {
+    func logits(for inputIDs: MLMultiArray) throws -> MLMultiArray {
+        let input = zenz_v1_8bitInput(input_ids: inputIDs)
+        return try prediction(input: input).logits
+    }
+    func logitsAsync(for inputIDs: MLMultiArray) async throws -> MLMultiArray {
+        let input = zenz_v1_8bitInput(input_ids: inputIDs)
+        return try await prediction(input: input).logits
+    }
+}
+
+enum ZenzStatelessModelVariant: CaseIterable, Hashable {
+    case standardFP16
+    case compressed8Bit
+
+    var labelSuffix: String {
+        switch self {
+        case .standardFP16:
+            return " [FP16]"
+        case .compressed8Bit:
+            return " [8-bit]"
+        }
+    }
+
+    var debugName: String {
+        switch self {
+        case .standardFP16:
+            return "zenz_v1"
+        case .compressed8Bit:
+            return "zenz_v1-8bit"
+        }
+    }
+
+    var uiTitle: String {
+        switch self {
+        case .standardFP16:
+            return "zenz_v1 (FP16 stateless)"
+        case .compressed8Bit:
+            return "zenz_v1 (8-bit stateless)"
+        }
+    }
+
+    var uiDescription: String {
+        switch self {
+        case .standardFP16:
+            return "Highest fidelity logits with the largest memory footprint."
+        case .compressed8Bit:
+            return "Quantized for lower RAM/GPU demand at the cost of precision."
+        }
+    }
+}
+
+// MARK: - Asynchronous Core ML loading helpers
+
+private func loadCoreMLModelAsync(
+    from url: URL,
+    configuration: MLModelConfiguration
+) async throws -> MLModel {
+    try await withCheckedThrowingContinuation { continuation in
+        MLModel.load(contentsOf: url, configuration: configuration) { result in
+            switch result {
+            case .success(let model):
+                continuation.resume(returning: model)
+            case .failure(let error):
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+}
+
 // Load the CoreML model.
 // CoreML 모델을 로드합니다.
 // CoreMLモデルをロードします。
@@ -131,7 +217,87 @@ func loadModel() -> zenz_v1? {
     return try? zenz_v1(configuration: config)
 }
 
-@available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, *)
+func loadModelAsync() async -> zenz_v1? {
+    do {
+        let config = MLModelConfiguration()
+        let base = try await loadCoreMLModelAsync(
+            from: zenz_v1.urlOfModelInThisBundle,
+            configuration: config
+        )
+        return try zenz_v1(model: base)
+    } catch {
+        print("[ModelLoad] Failed to async load zenz_v1: \(error)")
+        return nil
+    }
+}
+
+// Load the compressed 8-bit CoreML model.
+// 8-bit로 압축된 CoreML 모델을 로드합니다.
+// 8-bit に圧縮された Core ML モデルを読み込みます。
+func loadModel8Bit() -> zenz_v1_8bit? {
+    let config = MLModelConfiguration()
+    return try? zenz_v1_8bit(configuration: config)
+}
+
+func loadModel8BitAsync() async -> zenz_v1_8bit? {
+    do {
+        let config = MLModelConfiguration()
+        let base = try await loadCoreMLModelAsync(
+            from: zenz_v1_8bit.urlOfModelInThisBundle,
+            configuration: config
+        )
+        return try zenz_v1_8bit(model: base)
+    } catch {
+        print("[ModelLoad] Failed to async load zenz_v1_8bit: \(error)")
+        return nil
+    }
+}
+
+func resolveStatelessModel(
+    variant: ZenzStatelessModelVariant,
+    loadFP16: () -> (any ZenzStatelessPredicting)? = { loadModel() },
+    load8Bit: () -> (any ZenzStatelessPredicting)? = { loadModel8Bit() }
+) -> (any ZenzStatelessPredicting)? {
+    switch variant {
+    case .standardFP16:
+        if let model = loadFP16() {
+            return model
+        }
+        return load8Bit()
+    case .compressed8Bit:
+        if let model = load8Bit() {
+            return model
+        }
+        return loadFP16()
+    }
+}
+
+func loadStatelessModel(variant: ZenzStatelessModelVariant = .standardFP16) -> (any ZenzStatelessPredicting)? {
+    resolveStatelessModel(variant: variant)
+}
+
+func resolveStatelessModelAsync(
+    variant: ZenzStatelessModelVariant,
+    loadFP16: @escaping () async -> (any ZenzStatelessPredicting)? = { await loadModelAsync() },
+    load8Bit: @escaping () async -> (any ZenzStatelessPredicting)? = { await loadModel8BitAsync() }
+) async -> (any ZenzStatelessPredicting)? {
+    switch variant {
+    case .standardFP16:
+        if let model = await loadFP16() {
+            return model
+        }
+        return await load8Bit()
+    case .compressed8Bit:
+        if let model = await load8Bit() {
+            return model
+        }
+        return await loadFP16()
+    }
+}
+
+func loadStatelessModelAsync(variant: ZenzStatelessModelVariant = .standardFP16) async -> (any ZenzStatelessPredicting)? {
+    await resolveStatelessModelAsync(variant: variant)
+}
 func loadStatefulModel() -> zenz_v1_stateful? {
     do {
         let config = MLModelConfiguration()
@@ -143,6 +309,213 @@ func loadStatefulModel() -> zenz_v1_stateful? {
     } catch let error {
         print(error)
         return nil
+    }
+}
+
+func loadStatefulModelAsync() async -> zenz_v1_stateful? {
+    do {
+        let config = MLModelConfiguration()
+        config.computeUnits = .cpuAndGPU
+        let base = try await loadCoreMLModelAsync(
+            from: zenz_v1_stateful.urlOfModelInThisBundle,
+            configuration: config
+        )
+        return try zenz_v1_stateful(model: base)
+    } catch {
+        print("[ModelLoad] Failed to async load zenz_v1_stateful: \(error)")
+        return nil
+    }
+}
+func loadStatefulModel8Bit() -> zenz_v1_stateful_8bit? {
+    do {
+        let config = MLModelConfiguration()
+        config.computeUnits = .cpuAndGPU
+        return try zenz_v1_stateful_8bit(configuration: config)
+    } catch let error {
+        print(error)
+        return nil
+    }
+}
+
+func loadStatefulModel8BitAsync() async -> zenz_v1_stateful_8bit? {
+    do {
+        let config = MLModelConfiguration()
+        config.computeUnits = .cpuAndGPU
+        let base = try await loadCoreMLModelAsync(
+            from: zenz_v1_stateful_8bit.urlOfModelInThisBundle,
+            configuration: config
+        )
+        return try zenz_v1_stateful_8bit(model: base)
+    } catch {
+        print("[ModelLoad] Failed to async load zenz_v1_stateful_8bit: \(error)")
+        return nil
+    }
+}
+
+enum ZenzStatefulModelVariant: CaseIterable, Hashable {
+    case standardFP16
+    case compressed8Bit
+
+    var labelSuffix: String {
+        switch self {
+        case .standardFP16:
+            return " [Stateful FP16]"
+        case .compressed8Bit:
+            return " [Stateful 8-bit]"
+        }
+    }
+
+    var debugName: String {
+        switch self {
+        case .standardFP16:
+            return "zenz_v1_stateful"
+        case .compressed8Bit:
+            return "zenz_v1_stateful-8bit"
+        }
+    }
+
+    var uiTitle: String {
+        switch self {
+        case .standardFP16:
+            return "zenz_v1_stateful (FP16)"
+        case .compressed8Bit:
+            return "zenz_v1_stateful (8-bit)"
+        }
+    }
+
+    var uiDescription: String {
+        switch self {
+        case .standardFP16:
+            return "Streaming Core ML graph with full precision states."
+        case .compressed8Bit:
+            return "Smaller recurrent weights for lower-latency streaming."
+        }
+    }
+}
+
+enum ZenzStatefulModelHandle {
+    case fp16(zenz_v1_stateful)
+    case compressed8Bit(zenz_v1_stateful_8bit)
+}
+
+private extension ZenzStatefulModelHandle {
+    func withModel<Result>(
+        fp16: (zenz_v1_stateful) -> Result,
+        bit8: (zenz_v1_stateful_8bit) -> Result
+    ) -> Result {
+        switch self {
+        case .fp16(let model):
+            return fp16(model)
+        case .compressed8Bit(let model):
+            return bit8(model)
+        }
+    }
+
+    func withModel<Result>(
+        fp16: (zenz_v1_stateful) async -> Result,
+        bit8: (zenz_v1_stateful_8bit) async -> Result
+    ) async -> Result {
+        switch self {
+        case .fp16(let model):
+            return await fp16(model)
+        case .compressed8Bit(let model):
+            return await bit8(model)
+        }
+    }
+}
+func resolveStatefulModel(
+    variant: ZenzStatefulModelVariant,
+    loadFP16: () -> zenz_v1_stateful? = { loadStatefulModel() },
+    load8Bit: () -> zenz_v1_stateful_8bit? = { loadStatefulModel8Bit() }
+) -> ZenzStatefulModelHandle? {
+    switch variant {
+    case .standardFP16:
+        if let model = loadFP16() {
+            return .fp16(model)
+        }
+        if let model = load8Bit() {
+            return .compressed8Bit(model)
+        }
+        return nil
+    case .compressed8Bit:
+        if let model = load8Bit() {
+            return .compressed8Bit(model)
+        }
+        if let model = loadFP16() {
+            return .fp16(model)
+        }
+        return nil
+    }
+}
+
+func resolveStatefulModelAsync(
+    variant: ZenzStatefulModelVariant,
+    loadFP16: @escaping () async -> zenz_v1_stateful? = { await loadStatefulModelAsync() },
+    load8Bit: @escaping () async -> zenz_v1_stateful_8bit? = { await loadStatefulModel8BitAsync() }
+) async -> ZenzStatefulModelHandle? {
+    switch variant {
+    case .standardFP16:
+        if let model = await loadFP16() {
+            return .fp16(model)
+        }
+        if let fallback = await load8Bit() {
+            return .compressed8Bit(fallback)
+        }
+        return nil
+    case .compressed8Bit:
+        if let model = await load8Bit() {
+            return .compressed8Bit(model)
+        }
+        if let fallback = await loadFP16() {
+            return .fp16(fallback)
+        }
+        return nil
+    }
+}
+
+func loadStatefulModelHandleAsync(variant: ZenzStatefulModelVariant = .standardFP16) async -> ZenzStatefulModelHandle? {
+    await resolveStatefulModelAsync(variant: variant)
+}
+private func warmupStatefulModel(_ model: zenz_v1_stateful) async {
+    if
+        let warmupInputIDs = try? MLMultiArray(shape: [1, 1], dataType: .int32),
+        let warmupMask = try? MLMultiArray(shape: [1, 1], dataType: .int32)
+    {
+        warmupInputIDs[0] = 0
+        warmupMask[0] = 1
+
+        let warmupInput = zenz_v1_statefulInput(
+            input_ids: warmupInputIDs,
+            attention_mask: warmupMask
+        )
+
+        _ = try? await model.prediction(
+            input: warmupInput,
+            using: model.makeState()
+        )
+    } else {
+        print("[Stateful Warmup] Skipped: failed to allocate MLMultiArray.")
+    }
+}
+private func warmupStatefulModel(_ model: zenz_v1_stateful_8bit) async {
+    if
+        let warmupInputIDs = try? MLMultiArray(shape: [1, 1], dataType: .int32),
+        let warmupMask = try? MLMultiArray(shape: [1, 1], dataType: .int32)
+    {
+        warmupInputIDs[0] = 0
+        warmupMask[0] = 1
+
+        let warmupInput = zenz_v1_stateful_8bitInput(
+            input_ids: warmupInputIDs,
+            attention_mask: warmupMask
+        )
+
+        _ = try? await model.prediction(
+            input: warmupInput,
+            using: model.makeState()
+        )
+    } else {
+        print("[Stateful Warmup][8-bit] Skipped: failed to allocate MLMultiArray.")
     }
 }
 
@@ -160,8 +533,6 @@ func loadTokenizer() async -> Tokenizer? {
         fatalError(error.localizedDescription)
     }
 }
-
-@available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, *)
 func predictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer) -> [String] {
     let state = model.makeState()
     
@@ -223,11 +594,56 @@ func predictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer
     let predictedTexts = predictedTokenIDs.map { tokenizer.decode(tokens: $0) }
     return predictedTexts
 }
+func predictStateful(text: String, model: zenz_v1_stateful_8bit, tokenizer: Tokenizer) -> [String] {
+    let state = model.makeState()
+
+    let inputIDs = tokenizer.encode(text: text)
+    generationLog("[Stateful Predict][8-bit] inputIDs: \(text) \(inputIDs)")
+
+    let seqLen = inputIDs.count
+    guard
+        let inputArray = try? MLMultiArray(
+            shape: [NSNumber(value: 1), NSNumber(value: seqLen)],
+            dataType: .int32
+        ),
+        let attentionMask = try? MLMultiArray(
+            shape: [NSNumber(value: 1), NSNumber(value: seqLen)],
+            dataType: .int32
+        )
+    else {
+        return []
+    }
+
+    for (index, token) in inputIDs.enumerated() {
+        inputArray[index] = NSNumber(value: token)
+        attentionMask[index] = 1
+    }
+
+    let input = zenz_v1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
+
+    let output = try? model.prediction(input: input, using: state)
+    let logits = output?.logits
+
+    guard let logits else { return [] }
+
+    var predictedTokenIDs = [[Int]]()
+    for batchID in 0..<logits.shape[0].intValue {
+        predictedTokenIDs.append([])
+        for i in 0..<logits.shape[1].intValue {
+            let maxId = argmaxLogitsRow(logits, batch: batchID, time: i)
+            predictedTokenIDs[batchID].append(maxId)
+        }
+    }
+
+    generationLog("[Stateful Predict][8-bit] predictedTokenIDs: \(predictedTokenIDs)")
+    let predictedTexts = predictedTokenIDs.map { tokenizer.decode(tokens: $0) }
+    return predictedTexts
+}
 
 // Perform prediction.
 // 예측을 수행합니다.
 // 予測を行います。
-func predict(text: String, model: zenz_v1, tokenizer: Tokenizer) -> [String] {
+func predict(text: String, model: any ZenzStatelessPredicting, tokenizer: Tokenizer) -> [String] {
     // Encode the input text using the tokenizer.
     // 텍스트를 토크나이저를 사용하여 인코딩합니다.
     // トークナイザーを使って入力テキストをエンコードします。
@@ -243,22 +659,10 @@ func predict(text: String, model: zenz_v1, tokenizer: Tokenizer) -> [String] {
     }
     
     guard let inputArray else { return [] }
-    // Create model input (only input_ids, no attention_mask).
-    // 모델 입력을 생성합니다 (attention_mask 없이 input_ids만 전달).
-    // モデル入力を作成します（attention_maskなしでinput_idsのみ渡します）。
-    let input = zenz_v1Input(input_ids: inputArray)
-    
-    // Perform prediction.
-    // 예측을 수행합니다.
-    // 予測を行います。
-    let output = try? model.prediction(input: input)
-    
-    // Decode the output logits.
-    // 출력 logits을 디코딩합니다.
-    // 出力logitsをデコードします。
-    let logits = output?.logits
-    
-    guard let logits else { return [] }
+
+    guard let logits = try? model.logits(for: inputArray) else {
+        return []
+    }
     
     // Extract predicted token IDs from logits.
     // logits에서 예측된 토큰 ID를 추출합니다.
@@ -287,8 +691,7 @@ func predict(text: String, model: zenz_v1, tokenizer: Tokenizer) -> [String] {
 // Perform prediction.
 // 예측을 수행합니다.
 // 予測を行います。
-@available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
-func predict(text: String, model: zenz_v1, tokenizer: Tokenizer) async -> [String] {
+func predict(text: String, model: any ZenzStatelessPredicting, tokenizer: Tokenizer) async -> [String] {
     // Encode the input text using the tokenizer.
     // 텍스트를 토크나이저를 사용하여 인코딩합니다.
     // トークナイザーを使って入力テキストをエンコードします。
@@ -304,22 +707,10 @@ func predict(text: String, model: zenz_v1, tokenizer: Tokenizer) async -> [Strin
     }
     
     guard let inputArray else { return [] }
-    // Create model input (only input_ids, no attention_mask).
-    // 모델 입력을 생성합니다 (attention_mask 없이 input_ids만 전달).
-    // モデル入力を作成します（attention_maskなしでinput_idsのみ渡します）。
-    let input = zenz_v1Input(input_ids: inputArray)
-    
-    // Perform prediction.
-    // 예측을 수행합니다.
-    // 予測を行います。
-    let output = try? await model.prediction(input: input)
-    
-    // Decode the output logits.
-    // 출력 logits을 디코딩합니다.
-    // 出力logitsをデコードします。
-    let logits = output?.logits
-    
-    guard let logits else { return [] }
+
+    guard let logits = try? await model.logitsAsync(for: inputArray) else {
+        return []
+    }
     
     // Extract predicted token IDs from logits.
     // logits에서 예측된 토큰 ID를 추출합니다.
@@ -345,37 +736,9 @@ func predict(text: String, model: zenz_v1, tokenizer: Tokenizer) async -> [Strin
     return predictedTexts
 }
 
-@available(macOS, deprecated: 10.14, message: "Use newer API predict(text:model:tokenizer) async")
-@available(iOS, deprecated: 16.0, message: "Use newer API predict(text:model:tokenizer) async")
-@available(tvOS, deprecated: 16.0, message: "Use newer API predict(text:model:tokenizer) async")
-@available(watchOS, deprecated: 9.0, message: "Use newer API predict(text:model:tokenizer) async")
-func predictDispatch(text: String, model: zenz_v1, tokenizer: Tokenizer, qos: DispatchQoS) async -> [String] {
-    // Avoid capturing non-Sendable CoreML model/tokenizer directly in the @Sendable continuation
-    let modelPtr = Unmanaged.passUnretained(model).toOpaque()
-
-    // Tokenizer는 프로토콜(existential)이라서 바로 Unmanaged에 못 넣으니 AnyObject로 올려 태운다
-    let tokenizerObject = tokenizer as AnyObject
-    let tokenizerPtr = Unmanaged.passUnretained(tokenizerObject).toOpaque()
-
-    return await withCheckedContinuation { continuation in
-        DispatchQueue.global(qos: qos.qosClass).async {
-            // Reconstruct references inside the non-@Sendable Dispatch closure
-            let model = Unmanaged<zenz_v1>.fromOpaque(modelPtr).takeUnretainedValue()
-            let tokenizerObject = Unmanaged<AnyObject>.fromOpaque(tokenizerPtr).takeUnretainedValue()
-            guard let tokenizer = tokenizerObject as? Tokenizer else {
-                fatalError("Stored tokenizer does not conform to Tokenizer")
-            }
-
-            let result = predict(text: text, model: model, tokenizer: tokenizer)
-            continuation.resume(returning: result)
-        }
-    }
-}
-
 // Perform greedy token-by-token generation using the stateful Core ML model and its KV cache.
 // Stateful Core ML 모델과 KV 캐시를 사용해서 Greedy Search로 토큰을 한 단계씩 생성합니다.
 // ステートフルな Core ML モデルと KV キャッシュを使い、Greedy サーチでトークンを一つずつ生成します。
-@available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, *)
 func greedyPredictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer) -> String {
     let state = model.makeState()
     var predictedTokenIDs = tokenizer.encode(text: text)
@@ -430,9 +793,59 @@ func greedyPredictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tok
     let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
     return predictedText.replacingOccurrences(of: "[PAD]", with: "")
 }
+func greedyPredictStateful(text: String, model: zenz_v1_stateful_8bit, tokenizer: Tokenizer) -> String {
+    let state = model.makeState()
+    var predictedTokenIDs = tokenizer.encode(text: text)
+    generationLog("[Stateful Greedy][8-bit] inputIDs: \(text) \(predictedTokenIDs)")
 
-@available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, *)
-@available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, *)
+    let batchSize = 1
+    let maxSeqLength = 128
+    let eosTokenID: Int32 = 3
+
+    while predictedTokenIDs.count < maxSeqLength {
+        let seqLen = predictedTokenIDs.count
+
+        guard
+            let inputArray = try? MLMultiArray(
+                shape: [NSNumber(value: batchSize), NSNumber(value: seqLen)],
+                dataType: .int32
+            ),
+            let attentionMask = try? MLMultiArray(
+                shape: [NSNumber(value: batchSize), NSNumber(value: seqLen)],
+                dataType: .int32
+            )
+        else {
+            print("[Stateful Greedy][8-bit] Failed to allocate MLMultiArray")
+            break
+        }
+
+        for (index, token) in predictedTokenIDs.enumerated() {
+            inputArray[index] = NSNumber(value: token)
+            attentionMask[index] = 1
+        }
+
+        let input = zenz_v1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
+        guard let output = try? model.prediction(input: input, using: state) else {
+            print("[Stateful Greedy][8-bit] Prediction failed")
+            break
+        }
+
+        let logits = output.logits
+        let lastTimeIndex = logits.shape[1].intValue - 1
+
+        let nextTokenID = argmaxLogitsRow(logits, batch: 0, time: lastTimeIndex)
+        generationLog("[Stateful Greedy][8-bit] step seqLen=\(seqLen), nextTokenID=\(nextTokenID), tokenText=\(tokenizer.decode(tokens: [nextTokenID]))")
+
+        if Int32(nextTokenID) == eosTokenID {
+            break
+        }
+
+        predictedTokenIDs.append(nextTokenID)
+    }
+
+    let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
+    return predictedText.replacingOccurrences(of: "[PAD]", with: "")
+}
 func greedyPredictStatefulAsync(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer) async -> String {
     let state = model.makeState()
     var predictedTokenIDs = tokenizer.encode(text: text)
@@ -486,204 +899,192 @@ func greedyPredictStatefulAsync(text: String, model: zenz_v1_stateful, tokenizer
     let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
     return predictedText.replacingOccurrences(of: "[PAD]", with: "")
 }
+func greedyPredictStatefulAsync(text: String, model: zenz_v1_stateful_8bit, tokenizer: Tokenizer) async -> String {
+    let state = model.makeState()
+    var predictedTokenIDs = tokenizer.encode(text: text)
+    generationLog("[Stateful Greedy][8-bit Async] inputIDs: \(text) \(predictedTokenIDs)")
+
+    let batchSize = 1
+    let maxSeqLength = 128
+    let eosTokenID: Int32 = 3
+
+    while predictedTokenIDs.count < maxSeqLength {
+        let seqLen = predictedTokenIDs.count
+
+        guard
+            let inputArray = try? MLMultiArray(
+                shape: [NSNumber(value: batchSize), NSNumber(value: seqLen)],
+                dataType: .int32
+            ),
+            let attentionMask = try? MLMultiArray(
+                shape: [NSNumber(value: batchSize), NSNumber(value: seqLen)],
+                dataType: .int32
+            )
+        else {
+            print("[Stateful Greedy][8-bit Async] Failed to allocate MLMultiArray")
+            break
+        }
+
+        for (index, token) in predictedTokenIDs.enumerated() {
+            inputArray[index] = NSNumber(value: token)
+            attentionMask[index] = 1
+        }
+
+        let input = zenz_v1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
+        guard let output = try? await model.prediction(input: input, using: state) else {
+            print("[Stateful Greedy][8-bit Async] Prediction failed")
+            break
+        }
+
+        let logits = output.logits
+        let lastTimeIndex = logits.shape[1].intValue - 1
+
+        let nextTokenID = argmaxLogitsRow(logits, batch: 0, time: lastTimeIndex)
+        generationLog("[Stateful Greedy][8-bit Async] step seqLen=\(seqLen), nextTokenID=\(nextTokenID), tokenText=\(tokenizer.decode(tokens: [nextTokenID]))")
+
+        if Int32(nextTokenID) == eosTokenID {
+            break
+        }
+
+        predictedTokenIDs.append(nextTokenID)
+    }
+
+    let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
+    return predictedText.replacingOccurrences(of: "[PAD]", with: "")
+}
 
 // Perform prediction using Greedy search.
 // Greedy search를 사용하여 예측을 수행합니다.
 // Greedyサーチを使って予測を行います。
-func greedyPredict(text: String, model: zenz_v1, tokenizer: Tokenizer) -> String {
-    // Encode the input text using the tokenizer.
-    // 텍스트를 토크나이저를 사용하여 인코딩합니다.
-    // トークナイザーを使って入力テキストをエンコードします。
+func greedyPredict(text: String, model: any ZenzStatelessPredicting, tokenizer: Tokenizer) -> String {
     var inputIDs = tokenizer.encode(text: text)
     generationLog("[Stateless Greedy][Sync] inputIDs: \(text) \(inputIDs)")
-    
-    // Set the maximum sequence length.
-    // 최대 시퀀스 길이를 설정합니다.
-    // 最大シーケンス長を設定します。
+
     let maxSeqLength = 128
     let batchSize = 1
-    
-    // Array to store predicted token IDs.
-    // 예측된 토큰 ID를 저장할 배열입니다.
-    // 予測されたトークンIDを保存する配列です。
     var predictedTokenIDs = inputIDs
-    
+
     while true {
-        // Create MLMultiArray for input.
-        // 입력을 위한 MLMultiArray를 생성합니다.
-        // 入力用のMLMultiArrayを作成します。
-        let inputArray = try? MLMultiArray(shape: [NSNumber(value: batchSize), NSNumber(value: predictedTokenIDs.count)], dataType: .int32)
-        for (index, token) in predictedTokenIDs.enumerated() {
-            inputArray?[index] = NSNumber(value: token)
+        guard
+            let inputArray = try? MLMultiArray(
+                shape: [NSNumber(value: batchSize), NSNumber(value: predictedTokenIDs.count)],
+                dataType: .int32
+            )
+        else {
+            return ""
         }
-        
-        guard let inputArray else { return "" }
-        
-        // Create model input (only input_ids, no attention_mask).
-        // 모델 입력을 생성합니다 (attention_mask 없이 input_ids만 전달).
-        // モデル入力を作成します（attention_maskなしでinput_idsのみ渡します）。
-        let input = zenz_v1Input(input_ids: inputArray)
-        
-        // Perform prediction.
-        // 예측을 수행합니다.
-        // 予測を行います。
-        guard let output = try? model.prediction(input: input) else { return "" }
-        
-        // Decode the output logits.
-        // 출력 logits을 디코딩합니다.
-        // 出力logitsをデコードします。
-        let logits = output.logits
-        
-        // Extract predicted token ID from logits.
-        // logits에서 예측된 토큰 ID를 추출합니다.
-        // logitsから予測されたトークンIDを抽出します。
+
+        for (index, token) in predictedTokenIDs.enumerated() {
+            inputArray[index] = NSNumber(value: token)
+        }
+
+        guard let logits = try? model.logits(for: inputArray) else {
+            return ""
+        }
+
         let nextTokenID = argmaxLogitsRow(
             logits,
             batch: 0,
             time: predictedTokenIDs.count - 1
         )
-        
-        // Check for end token (e.g., <EOS> token ID).
-        // 종료 토큰(예: <EOS> 토큰 ID)을 확인합니다.
-        // 終了トークン（例：<EOS>トークンID）を確認します。
+
         if nextTokenID == 3 {
             break
         }
-        
-        // Add the predicted token ID.
-        // 예측된 토큰 ID를 추가합니다.
-        // 予測されたトークンIDを追加します。
+
         predictedTokenIDs.append(nextTokenID)
-        
-        // Exit if the maximum sequence length is reached.
-        // 최대 시퀀스 길이에 도달하면 종료합니다.
-        // 最大シーケンス長に到達したら終了します。
+
         if predictedTokenIDs.count >= maxSeqLength {
             break
         }
     }
-    
-    // Decode the predicted token IDs back to text.
-    // 예측된 토큰 ID를 다시 텍스트로 디코딩합니다.
-    // 予測されたトークンIDをテキストにデコードします。
+
     let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
-    
-    // Print the result.
-    // 결과를 출력합니다.
-    // 結果を出力します。
     return predictedText
 }
 
 // Perform prediction using Greedy search.
 // Greedy search를 사용하여 예측을 수행합니다.
 // Greedyサーチを使って予測を行います。
-@available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
-func greedyPredictAsync(text: String, model: zenz_v1, tokenizer: Tokenizer) async -> String {
-    // Encode the input text using the tokenizer.
-    // 텍스트를 토크나이저를 사용하여 인코딩합니다.
-    // トークナイザーを使って入力テキストをエンコードします。
+func greedyPredictAsync(text: String, model: any ZenzStatelessPredicting, tokenizer: Tokenizer) async -> String {
     var inputIDs = tokenizer.encode(text: text)
     generationLog("[Stateless Greedy][Async] inputIDs: \(text) \(inputIDs)")
-    
-    // Set the maximum sequence length.
-    // 최대 시퀀스 길이를 설정합니다.
-    // 最大シーケンス長を設定します。
+
     let maxSeqLength = 128
     let batchSize = 1
-    
-    // Array to store predicted token IDs.
-    // 예측된 토큰 ID를 저장할 배열입니다.
-    // 予測されたトークンIDを保存する配列です。
     var predictedTokenIDs = inputIDs
-    
+
     while true {
-        // Create MLMultiArray for input.
-        // 입력을 위한 MLMultiArray를 생성합니다.
-        // 入力用のMLMultiArrayを作成します。
-        let inputArray = try? MLMultiArray(shape: [NSNumber(value: batchSize), NSNumber(value: predictedTokenIDs.count)], dataType: .int32)
-        for (index, token) in predictedTokenIDs.enumerated() {
-            inputArray?[index] = NSNumber(value: token)
+        guard
+            let inputArray = try? MLMultiArray(
+                shape: [NSNumber(value: batchSize), NSNumber(value: predictedTokenIDs.count)],
+                dataType: .int32
+            )
+        else {
+            return ""
         }
-        
-        guard let inputArray else { return "" }
-        
-        // Create model input (only input_ids, no attention_mask).
-        // 모델 입력을 생성합니다 (attention_mask 없이 input_ids만 전달).
-        // モデル入力を作成します（attention_maskなしでinput_idsのみ渡します）。
-        let input = zenz_v1Input(input_ids: inputArray)
-        
-        // Perform prediction.
-        // 예측을 수행합니다.
-        // 予測を行います。
-        guard let output = try? await model.prediction(input: input) else { return "" }
-        
-        // Decode the output logits.
-        // 출력 logits을 디코딩합니다.
-        // 出力logitsをデコードします。
-        let logits = output.logits
-        
-        // Extract predicted token ID from logits.
-        // logits에서 예측된 토큰 ID를 추출합니다.
-        // logitsから予測されたトークンIDを抽出します。
+
+        for (index, token) in predictedTokenIDs.enumerated() {
+            inputArray[index] = NSNumber(value: token)
+        }
+
+        guard let logits = try? await model.logitsAsync(for: inputArray) else {
+            return ""
+        }
+
         let nextTokenID = argmaxLogitsRow(
             logits,
             batch: 0,
             time: predictedTokenIDs.count - 1
         )
-        
-        // Check for end token (e.g., <EOS> token ID).
-        // 종료 토큰(예: <EOS> 토큰 ID)을 확인합니다.
-        // 終了トークン（例：<EOS>トークンID）を確認します。
+
         if nextTokenID == 3 {
             break
         }
-        
-        // Add the predicted token ID.
-        // 예측된 토큰 ID를 추가합니다.
-        // 予測されたトークンIDを追加します。
+
         predictedTokenIDs.append(nextTokenID)
-        
-        // Exit if the maximum sequence length is reached.
-        // 최대 시퀀스 길이에 도달하면 종료합니다.
-        // 最大シーケンス長に到達したら終了します。
+
         if predictedTokenIDs.count >= maxSeqLength {
             break
         }
     }
-    
-    // Decode the predicted token IDs back to text.
-    // 예측된 토큰 ID를 다시 텍스트로 디코딩합니다.
-    // 予測されたトークンIDをテキストにデコードします。
+
     let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
-    
-    // Print the result.
-    // 결과를 출력합니다.
-    // 結果を出力します。
     return predictedText
 }
 
-@available(macOS, deprecated: 10.14, message: "Use newer API greedyPredict(text:model:tokenizer) async")
-@available(iOS, deprecated: 16.0, message: "Use newer API greedyPredict(text:model:tokenizer) async")
-@available(tvOS, deprecated: 16.0, message: "Use newer API greedyPredict(text:model:tokenizer) async")
-@available(watchOS, deprecated: 9.0, message: "Use newer API greedyPredict(text:model:tokenizer) async")
-func greedyPredictDispatch(text: String, model: zenz_v1, tokenizer: Tokenizer, qos: DispatchQoS) async -> String {
-    // Avoid capturing non-Sendable CoreML model/tokenizer directly in the @Sendable continuation
-    let modelPtr = Unmanaged.passUnretained(model).toOpaque()
+/// Configuration describing which Core ML variants should be loaded.
+/// 한국어: 로드할 Core ML 모델 종류를 정의하는 설정입니다.
+/// 日本語: 読み込む Core ML モデルの種類を定義する設定です。
+struct ModelLoadConfiguration: Equatable {
+    let stateless: Set<ZenzStatelessModelVariant>
+    let stateful: Set<ZenzStatefulModelVariant>
 
-    let tokenizerObject = tokenizer as AnyObject
-    let tokenizerPtr = Unmanaged.passUnretained(tokenizerObject).toOpaque()
+    static let empty = ModelLoadConfiguration(stateless: [], stateful: [])
 
-    return await withCheckedContinuation { continuation in
-        DispatchQueue.global(qos: qos.qosClass).async {
-            let model = Unmanaged<zenz_v1>.fromOpaque(modelPtr).takeUnretainedValue()
-            let tokenizerObject = Unmanaged<AnyObject>.fromOpaque(tokenizerPtr).takeUnretainedValue()
-            guard let tokenizer = tokenizerObject as? Tokenizer else {
-                fatalError("Stored tokenizer does not conform to Tokenizer")
+    var isEmpty: Bool {
+        stateless.isEmpty && stateful.isEmpty
+    }
+
+    var summaryDescription: String {
+        let statelessNames = ZenzStatelessModelVariant.allCases
+            .filter { stateless.contains($0) }
+            .map { $0.uiTitle }
+        let statefulNames = ZenzStatefulModelVariant.allCases
+            .filter { stateful.contains($0) }
+            .map { $0.uiTitle }
+
+        func describe(_ name: String, items: [String]) -> String {
+            if items.isEmpty {
+                return "\(name): none"
             }
-
-            let result = greedyPredict(text: text, model: model, tokenizer: tokenizer)
-            continuation.resume(returning: result)
+            return "\(name): \(items.joined(separator: ", "))"
         }
+
+        return [
+            describe("stateless", items: statelessNames),
+            describe("stateful", items: statefulNames)
+        ].joined(separator: " | ")
     }
 }
 
@@ -691,136 +1092,184 @@ func greedyPredictDispatch(text: String, model: zenz_v1, tokenizer: Tokenizer, q
 // 벤치마크 공통 환경 (모델 + 토크나이저)을 한 번만 초기화해서 재사용하기 위한 구조체.
 // ベンチマーク共通の環境（モデル + トークナイザー）を一度だけ初期化して再利用するための構造体。
 struct BenchmarkEnvironment {
-    let model: zenz_v1
     let tokenizer: Tokenizer
+    let statelessModels: [ZenzStatelessModelVariant: any ZenzStatelessPredicting]
+    let statefulModels: [ZenzStatefulModelVariant: ZenzStatefulModelHandle]
 }
 
-// Load the model and tokenizer and build a BenchmarkEnvironment.
-// 모델과 토크나이저를 로드하여 BenchmarkEnvironment를 구성합니다.
-// モデルとトークナイザーを読み込んで BenchmarkEnvironment を構築します。
-func makeBenchmarkEnvironment() async -> BenchmarkEnvironment {
-    let model = loadModel()
-    guard let model else { fatalError("model not found") }
-    
+// Load the models and tokenizer for the requested configuration.
+// 요청된 설정에 따라 모델과 토크나이저를 로드합니다.
+// 指定された設定に従ってモデルとトークナイザーをロードします。
+func makeBenchmarkEnvironment(config: ModelLoadConfiguration) async -> BenchmarkEnvironment? {
+    guard !config.isEmpty else {
+        print("[BenchmarkEnvironment] Skipped loading: empty configuration.")
+        return nil
+    }
+
     let tokenizer = await loadTokenizer()
     guard let tokenizer else { fatalError("tokenizer not found") }
-    
-    return BenchmarkEnvironment(model: model, tokenizer: tokenizer)
+
+    var stateless: [ZenzStatelessModelVariant: any ZenzStatelessPredicting] = [:]
+    for variant in ZenzStatelessModelVariant.allCases where config.stateless.contains(variant) {
+        guard let model = await loadStatelessModelAsync(variant: variant) else {
+            print("[BenchmarkEnvironment] Missing stateless model \(variant.debugName).")
+            continue
+        }
+        stateless[variant] = model
+    }
+
+    var stateful: [ZenzStatefulModelVariant: ZenzStatefulModelHandle] = [:]
+    for variant in ZenzStatefulModelVariant.allCases where config.stateful.contains(variant) {
+        guard let handle = await loadStatefulModelHandleAsync(variant: variant) else {
+            print("[BenchmarkEnvironment] Missing stateful model \(variant.debugName).")
+            continue
+        }
+        stateful[variant] = handle
+    }
+
+    guard !stateless.isEmpty || !stateful.isEmpty else {
+        print("[BenchmarkEnvironment] Failed to load any selected models.")
+        return nil
+    }
+
+    return BenchmarkEnvironment(
+        tokenizer: tokenizer,
+        statelessModels: stateless,
+        statefulModels: stateful
+    )
+}
+
+struct BenchmarkPlanEntry {
+    enum Kind {
+        case stateless(ZenzStatelessModelVariant)
+        case stateful(ZenzStatefulModelVariant)
+    }
+
+    let kind: Kind
+
+    var labelSuffix: String {
+        switch kind {
+        case .stateless(let variant):
+            return variant.labelSuffix
+        case .stateful(let variant):
+            return variant.labelSuffix
+        }
+    }
+
+    static func defaultOrder() -> [BenchmarkPlanEntry] {
+        [
+            BenchmarkPlanEntry(kind: .stateless(.standardFP16)),
+            BenchmarkPlanEntry(kind: .stateless(.compressed8Bit)),
+            BenchmarkPlanEntry(kind: .stateful(.standardFP16)),
+            BenchmarkPlanEntry(kind: .stateful(.compressed8Bit))
+        ]
+    }
 }
 
 // For the given sentence (kana input), run both stateless and stateful benchmarks and print grouped rankings.
 // 주어진 문장(카타카나 입력)에 대해 Stateless / Stateful 양쪽 벤치마크를 실행하고, 그룹별 랭킹을 출력합니다.
 // 与えられた文（カタカナ入力）に対して Stateless / Stateful の両方のベンチマークを実行し、グループ別ランキングを出力します。
-func runBenchmarksFor(groupTag: String, kanaInput: String, env: BenchmarkEnvironment) async {
+func runBenchmarksFor(
+    groupTag: String,
+    kanaInput: String,
+    env: BenchmarkEnvironment,
+    includeSync: Bool
+) async {
     var benchmarks: [BenchmarkResult] = []
-    let model = env.model
     let tokenizer = env.tokenizer
-    
-    // MARK: - Stateless (Async)
-    if #available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *) {
-        let startAsync = Date()
-        let predictedSentenceAsync = await greedyPredictAsync(text: kanaInput, model: model, tokenizer: tokenizer)
-        let durationAsync = Date().timeIntervalSince(startAsync)
-        benchmarks.append(
-            BenchmarkResult(
-                label: "[Stateless Greedy][Async global]\(groupTag)",
-                duration: durationAsync,
-                input: kanaInput,
-                output: predictedSentenceAsync
-            )
-        )
-    } else {
-        let startAsync = Date()
-        let predictedSentenceAsync = await greedyPredictDispatch(text: kanaInput, model: model, tokenizer: tokenizer, qos: .userInitiated)
-        let durationAsync = Date().timeIntervalSince(startAsync)
-        benchmarks.append(
-            BenchmarkResult(
-                label: "[Stateless Greedy][Async dispatch]\(groupTag)",
-                duration: durationAsync,
-                input: kanaInput,
-                output: predictedSentenceAsync
-            )
-        )
-    }
-    
-    // MARK: - Stateless (Sync)
-    do {
-        let start = Date()
-        let predictedSentence = greedyPredict(text: kanaInput, model: model, tokenizer: tokenizer)
-        let durationSync = Date().timeIntervalSince(start)
-        benchmarks.append(
-            BenchmarkResult(
-                label: "[Stateless Greedy][Sync main]\(groupTag)",
-                duration: durationSync,
-                input: kanaInput,
-                output: predictedSentence
-            )
-        )
-    }
-    
-    // MARK: - Stateful (Async & Sync)
-    if #available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, *) {
-        let statefulModel = loadStatefulModel()
-        guard let statefulModel else {
-            print("[Stateful Greedy]\(groupTag) Skipped: stateful model not found")
-            printBenchmarkRanking(for: groupTag, benchmarks: benchmarks)
-            return
+
+    let plan = BenchmarkPlanEntry.defaultOrder()
+    let activePlan = plan.filter { entry in
+        switch entry.kind {
+        case .stateless(let variant):
+            return env.statelessModels[variant] != nil
+        case .stateful(let variant):
+            return env.statefulModels[variant] != nil
         }
-        
-        // Run the stateful model once before benchmarking so that compile/plan-build time is excluded.
-        // Stateful 모델을 벤치마크 전에 한 번만 실행해서, 컴파일/플랜 빌드 시간을 측정에서 제외합니다.
-        // ステートフルモデルをベンチマーク前に一度だけ実行し、コンパイル/プラン構築時間を測定から除外します。
-        if
-            let warmupInputIDs = try? MLMultiArray(shape: [1, 1], dataType: .int32),
-            let warmupMask = try? MLMultiArray(shape: [1, 1], dataType: .int32)
-        {
-            warmupInputIDs[0] = 0
-            warmupMask[0] = 1
-            
-            let warmupInput = zenz_v1_statefulInput(
-                input_ids: warmupInputIDs,
-                attention_mask: warmupMask
-            )
-            
-            _ = try? await statefulModel.prediction(
-                input: warmupInput,
-                using: statefulModel.makeState()
-            )
-        } else {
-            print("[Stateful Warmup]\(groupTag) Skipped: failed to allocate MLMultiArray.")
-        }
-        
-        // Stateful Async
-        do {
+    }
+
+    guard !activePlan.isEmpty else {
+        print("[Benchmarks] Skipped: No Core ML models loaded for \(groupTag).")
+        return
+    }
+
+    for entry in activePlan {
+        switch entry.kind {
+        case .stateless(let variant):
+            guard let statelessModel = env.statelessModels[variant] else {
+                print("[Stateless Greedy]\(variant.debugName) Skipped: model not loaded.")
+                continue
+            }
+
             let startAsync = Date()
-            let predictedSentenceAsync = await greedyPredictStatefulAsync(text: kanaInput, model: statefulModel, tokenizer: tokenizer)
+            let predictedSentenceAsync = await greedyPredictAsync(text: kanaInput, model: statelessModel, tokenizer: tokenizer)
             let durationAsync = Date().timeIntervalSince(startAsync)
             benchmarks.append(
                 BenchmarkResult(
-                    label: "[Stateful Greedy][Async global]\(groupTag)",
+                    label: "[Stateless Greedy][Async global]\(variant.labelSuffix)\(groupTag)",
                     duration: durationAsync,
                     input: kanaInput,
                     output: predictedSentenceAsync
                 )
             )
-        }
-        
-        // Stateful Sync
-        do {
-            let start = Date()
-            let predictedSentence = greedyPredictStateful(text: kanaInput, model: statefulModel, tokenizer: tokenizer)
-            let durationStateful = Date().timeIntervalSince(start)
+
+            if includeSync {
+                let startSync = Date()
+                let predictedSentence = greedyPredict(text: kanaInput, model: statelessModel, tokenizer: tokenizer)
+                let durationSync = Date().timeIntervalSince(startSync)
+                benchmarks.append(
+                    BenchmarkResult(
+                        label: "[Stateless Greedy][Sync main]\(variant.labelSuffix)\(groupTag)",
+                        duration: durationSync,
+                        input: kanaInput,
+                        output: predictedSentence
+                    )
+                )
+            }
+
+        case .stateful(let variant):
+            guard let statefulHandle = env.statefulModels[variant] else {
+                print("[Stateful Greedy]\(variant.debugName) Skipped: model not loaded.")
+                continue
+            }
+
+            await statefulHandle.withModel(
+                fp16: { await warmupStatefulModel($0) },
+                bit8: { await warmupStatefulModel($0) }
+            )
+
+            let startAsync = Date()
+            let predictedSentenceAsync = await statefulHandle.withModel(
+                fp16: { await greedyPredictStatefulAsync(text: kanaInput, model: $0, tokenizer: tokenizer) },
+                bit8: { await greedyPredictStatefulAsync(text: kanaInput, model: $0, tokenizer: tokenizer) }
+            )
+            let durationAsync = Date().timeIntervalSince(startAsync)
             benchmarks.append(
                 BenchmarkResult(
-                    label: "[Stateful Greedy][Sync main]\(groupTag)",
-                    duration: durationStateful,
+                    label: "[Stateful Greedy][Async global]\(variant.labelSuffix)\(groupTag)",
+                    duration: durationAsync,
                     input: kanaInput,
-                    output: predictedSentence
+                    output: predictedSentenceAsync
                 )
             )
+
+            if includeSync {
+                let startSync = Date()
+                let predictedSentence = statefulHandle.withModel(
+                    fp16: { greedyPredictStateful(text: kanaInput, model: $0, tokenizer: tokenizer) },
+                    bit8: { greedyPredictStateful(text: kanaInput, model: $0, tokenizer: tokenizer) }
+                )
+                let durationSync = Date().timeIntervalSince(startSync)
+                benchmarks.append(
+                    BenchmarkResult(
+                        label: "[Stateful Greedy][Sync main]\(variant.labelSuffix)\(groupTag)",
+                        duration: durationSync,
+                        input: kanaInput,
+                        output: predictedSentence
+                    )
+                )
+            }
         }
-    } else {
-        print("[Stateful Greedy]\(groupTag) Skipped: stateful model not available on this OS.")
     }
     
     // Print benchmark ranking for this group (sentence).

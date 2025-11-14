@@ -22,16 +22,19 @@ struct PageControlView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIPageControl, context: Context) {
+        context.coordinator.isUpdating = true
         uiView.numberOfPages = totalPages
         let clamped = min(max(0, currentPage), max(0, totalPages - 1))
         if uiView.currentPage != clamped {
             uiView.currentPage = clamped
         }
         uiView.isHidden = totalPages <= 1
+        context.coordinator.isUpdating = false
     }
 
     final class Coordinator: NSObject {
         let parent: PageControlView
+        var isUpdating = false
 
         init(parent: PageControlView) {
             self.parent = parent
@@ -39,6 +42,7 @@ struct PageControlView: UIViewRepresentable {
 
         @objc
         func onValueChanged(_ sender: UIPageControl) {
+            guard !isUpdating else { return }
             parent.currentPage = sender.currentPage
         }
     }

@@ -17,15 +17,13 @@ struct TestCaseLibraryView: View {
     }
 
     let cases: [BenchmarkCase]
-    let addAction: (String, String) -> Void
-    let updateAction: (BenchmarkCase, String, String) -> Void
+    let addAction: (String, String, String) -> Void
+    let updateAction: (BenchmarkCase, String, String, String) -> Void
     let deleteAction: (BenchmarkCase) -> Void
-    let resetAction: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var editorMode: EditorMode?
-    @State private var showResetConfirmation = false
 
     var body: some View {
         List {
@@ -57,6 +55,12 @@ struct TestCaseLibraryView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(3)
+                        if !testCase.expectedKanaOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("Expected: \(testCase.expectedKanaOutput)")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(2)
+                        }
                     }
                     .contentShape(Rectangle())
                     .onTapGesture { editorMode = .edit(testCase) }
@@ -72,14 +76,6 @@ struct TestCaseLibraryView: View {
                             Label("Delete", systemImage: "trash")
                         }
                     }
-                }
-            }
-
-            Section {
-                Button(role: .destructive) {
-                    showResetConfirmation = true
-                } label: {
-                    Label("Reset to Default Cases", systemImage: "arrow.counterclockwise")
                 }
             }
         }
@@ -106,32 +102,21 @@ struct TestCaseLibraryView: View {
         .sheet(item: $editorMode) { mode in
             switch mode {
             case .add:
-                TestCaseEditorView(title: "Add Test Case") { label, prompt in
-                    addAction(label, prompt)
+                TestCaseEditorView(title: "Add Test Case") { label, prompt, expected in
+                    addAction(label, prompt, expected)
                 }
                 .id("add-case-editor")
             case .edit(let testCase):
                 TestCaseEditorView(
                     label: testCase.label,
                     kanaPrompt: testCase.kanaPrompt,
+                    expectedOutput: testCase.expectedKanaOutput,
                     title: "Edit Test Case"
-                ) { label, prompt in
-                    updateAction(testCase, label, prompt)
+                ) { label, prompt, expected in
+                    updateAction(testCase, label, prompt, expected)
                 }
                 .id(testCase.persistentModelID)
             }
-        }
-        .confirmationDialog(
-            "Reset test cases?",
-            isPresented: $showResetConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Reset to default set", role: .destructive) {
-                resetAction()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("All existing cases will be replaced by the default kana prompts.")
         }
     }
 

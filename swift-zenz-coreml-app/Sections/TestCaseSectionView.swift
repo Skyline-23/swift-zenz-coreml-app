@@ -29,16 +29,18 @@ struct TestCaseSectionView: View {
             } label: {
                 Label("Open Test Case Library", systemImage: "doc.text.magnifyingglass")
                     .frame(maxWidth: .infinity)
+                    .foregroundStyle(Color.accentColor)
             }
-            .buttonStyle(GlassButtonStyle(tint: .accentColor, labelColor: .accentColor))
+            .tintedGlassButton(tint: .accentColor, labelColor: .accentColor)
 
             Button(role: .destructive) {
                 resetAction()
             } label: {
                 Label("Reset to Default Cases", systemImage: "arrow.counterclockwise")
                     .frame(maxWidth: .infinity)
+                    .foregroundStyle(.red)
             }
-            .buttonStyle(GlassButtonStyle(tint: .red, labelColor: .red))
+            .tintedGlassButton(tint: .red, labelColor: .red)
         }
     }
 }

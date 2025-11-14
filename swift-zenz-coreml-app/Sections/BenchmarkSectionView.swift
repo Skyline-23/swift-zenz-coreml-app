@@ -22,15 +22,17 @@ struct BenchmarkSectionView: View {
                 Button(action: runAll) {
                     Label(isRunning ? "Running…" : "Run Full Set", systemImage: "aqi.medium")
                         .frame(maxWidth: .infinity)
+                        .foregroundStyle(.cyan)
                 }
-                .buttonStyle(GlassButtonStyle(tint: .cyan, labelColor: .cyan))
+                .tintedGlassButton(tint: .cyan, labelColor: .cyan)
                 .disabled(isRunning || !envReady)
 
                 Button(action: runShort) {
                     Label("Short Burst", systemImage: "bolt.fill")
                         .frame(maxWidth: .infinity)
+                        .foregroundStyle(.cyan)
                 }
-                .buttonStyle(GlassButtonStyle(tint: .cyan, labelColor: .cyan))
+                .tintedGlassButton(tint: .cyan, labelColor: .cyan)
                 .disabled(isRunning || !envReady)
             }
         }

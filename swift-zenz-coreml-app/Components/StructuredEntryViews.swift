@@ -23,6 +23,34 @@ struct RankingRow: Identifiable {
     let input: String
     let output: String
     let rawDetail: String
+    let statusSymbol: String?
+    let statusColor: Color?
+    let durationValue: Double?
+    let variantKey: String
+
+    init(
+        position: Int,
+        label: String,
+        duration: String,
+        input: String,
+        output: String,
+        rawDetail: String,
+        statusSymbol: String? = nil,
+        statusColor: Color? = nil,
+        durationValue: Double? = nil,
+        variantKey: String = ""
+    ) {
+        self.position = position
+        self.label = label
+        self.duration = duration
+        self.input = input
+        self.output = output
+        self.rawDetail = rawDetail
+        self.statusSymbol = statusSymbol
+        self.statusColor = statusColor
+        self.durationValue = durationValue
+        self.variantKey = variantKey
+    }
 }
 
 struct StatusCardView: View {
@@ -45,8 +73,8 @@ struct StatusCardView: View {
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 22)
-        .accentGlass(
-            entry.accent,
+        .liquidGlassTile(
+            tint: entry.accent,
             shape: RoundedRectangle(cornerRadius: 22, style: .continuous)
         )
     }
@@ -65,8 +93,8 @@ struct StatusPlaceholderView: View {
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 34)
-        .accentGlass(
-            .secondary,
+        .liquidGlassTile(
+            tint: .secondary,
             shape: RoundedRectangle(cornerRadius: 22, style: .continuous)
         )
     }
@@ -98,13 +126,25 @@ struct EntryCardView: View {
                     }
                     ForEach(rows) { row in
                         VStack(alignment: .leading, spacing: 3) {
-                            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                Text("\(row.position).")
-                                    .font(.caption.bold())
+                            HStack(alignment: .center, spacing: 8) {
+                                Text("\(row.position)")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
                                     .foregroundStyle(.secondary)
+                                    .frame(width: 18, height: 18)
+                                    .background(
+                                        Circle()
+                                            .fill(Color.white.opacity(0.08))
+                                    )
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(row.label)
-                                        .font(.caption.weight(.semibold))
+                                    HStack(spacing: 4) {
+                                        if let symbol = row.statusSymbol {
+                                            Image(systemName: symbol)
+                                                .font(.caption)
+                                                .foregroundStyle(row.statusColor ?? .secondary)
+                                        }
+                                        Text(row.label)
+                                            .font(.caption.weight(.semibold))
+                                    }
                                     if row.input.isEmpty, row.output.isEmpty, row.duration.isEmpty {
                                         Text(row.rawDetail)
                                             .font(.caption2)
@@ -118,20 +158,6 @@ struct EntryCardView: View {
                                         .font(.caption2.monospacedDigit())
                                         .foregroundStyle(.primary)
                                 }
-                            }
-                            if !row.promptSnippet.isEmpty {
-                                Text("Input: \(row.promptSnippet.truncated(to: 48))")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                            }
-                            if !row.outputSnippet.isEmpty {
-                                Text("Output: \(row.outputSnippet.truncated(to: 48))")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
                             }
                         }
                         .padding(6)

@@ -4,7 +4,8 @@ struct StatusOutputSectionView: View {
     let statusEntry: StructuredEntry?
     let outputEntries: [StructuredEntry]
     @Binding var selectedPage: Int
-    @Binding var cardHeight: CGFloat
+    let heightResetToken: Int
+    @State private var cardHeight: CGFloat = 220
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -38,7 +39,7 @@ struct StatusOutputSectionView: View {
                     .indexViewStyle(.page(backgroundDisplayMode: .never))
                     .onPreferenceChange(OutputCardHeightKey.self) { newHeight in
                         let clamped = min(max(newHeight, 220), 520)
-                        if clamped - cardHeight > 1 {
+                        if abs(cardHeight - clamped) > 1 {
                             cardHeight = clamped
                         }
                     }
@@ -47,6 +48,9 @@ struct StatusOutputSectionView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
+        }
+        .onChange(of: heightResetToken) { _ in
+            cardHeight = 220
         }
     }
 

@@ -18,25 +18,33 @@ struct LogConsoleSectionView: View {
                             .foregroundStyle(.red)
                     }
                     .frame(maxWidth: .infinity)
+                    .foregroundStyle(.red)
                 }
-                .buttonStyle(GlassButtonStyle(tint: .red, labelColor: .red))
+                .tintedGlassButton(tint: .red, labelColor: .red)
                 .disabled(isLogEmpty)
 
                 Button(action: shareAction) {
                     Label("Export", systemImage: "square.and.arrow.up")
                         .frame(maxWidth: .infinity)
+                        .foregroundStyle(Color.accentColor)
                 }
-                .buttonStyle(GlassButtonStyle(tint: Color.accentColor, labelColor: Color.accentColor))
+                .tintedGlassButton(tint: .accentColor, labelColor: .accentColor)
                 .disabled(isLogEmpty)
             }
             
             ScrollViewReader { proxy in
                 ScrollView {
-                    LogTextView(text: log)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 10)
-                        .id(logScrollID)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(log.isEmpty ? "No log output yet." : log)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 10)
+                        Color.clear
+                            .frame(height: 1)
+                            .id(logScrollID)
+                    }
                 }
                 .frame(height: 220)
                 .background(Color(.systemGray6))
