@@ -8,6 +8,10 @@ struct BenchmarkSectionView: View {
     let runShort: () -> Void
 
     var body: some View {
+        let disabledByEnv = !envReady
+        let buttonTint = disabledByEnv ? Color.gray.opacity(0.35) : Color.cyan
+        let labelColor = disabledByEnv ? Color.gray.opacity(0.7) : Color.cyan
+
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Preset suites")
@@ -22,17 +26,17 @@ struct BenchmarkSectionView: View {
                 Button(action: runAll) {
                     Label(isRunning ? "Running…" : "Run Full Set", systemImage: "aqi.medium")
                         .frame(maxWidth: .infinity)
-                        .foregroundStyle(.cyan)
+                        .foregroundStyle(labelColor)
                 }
-                .tintedGlassButton(tint: .cyan, labelColor: .cyan)
+                .tintedGlassButton(tint: buttonTint, labelColor: labelColor)
                 .disabled(isRunning || !envReady)
 
                 Button(action: runShort) {
                     Label("Short Burst", systemImage: "bolt.fill")
                         .frame(maxWidth: .infinity)
-                        .foregroundStyle(.cyan)
+                        .foregroundStyle(labelColor)
                 }
-                .tintedGlassButton(tint: .cyan, labelColor: .cyan)
+                .tintedGlassButton(tint: buttonTint, labelColor: labelColor)
                 .disabled(isRunning || !envReady)
             }
         }

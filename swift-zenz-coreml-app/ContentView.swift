@@ -193,17 +193,16 @@ struct ContentView: View {
                 )
             }
             .listRowBackground(Color(.systemBackground))
-            .listRowInsets(EdgeInsets(top: 12, leading: 4, bottom: 12, trailing: 4))
 
-            Section("Environment") {
-                EnvironmentSectionView(
-                    verbose: $verbose,
-                    includeSyncBenchmarks: $includeSyncBenchmarks,
-                    statelessSelection: $selectedStatelessModels,
-                    statefulSelection: $selectedStatefulModels
-                )
-            }
+            EnvironmentSectionView(
+                verbose: $verbose,
+                includeSyncBenchmarks: $includeSyncBenchmarks,
+                statelessSelection: $selectedStatelessModels,
+                statefulSelection: $selectedStatefulModels
+            )
             .listRowBackground(Color(.systemBackground))
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
 
             Section("Test Cases") {
                 TestCaseSectionView(
@@ -241,12 +240,12 @@ struct ContentView: View {
                 )
             }
             .listRowBackground(Color(.systemBackground))
-            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 12, trailing: 0))
             .listRowSeparator(.hidden)
 
             logConsoleSection
         }
         .listStyle(.insetGrouped)
+        .listSectionSpacing(8)
         .scrollContentBackground(.hidden)
         .background(Color(.systemGroupedBackground))
         .navigationTitle("zenz Benchmark Studio")

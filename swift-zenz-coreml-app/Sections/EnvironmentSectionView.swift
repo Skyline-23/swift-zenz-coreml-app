@@ -7,23 +7,32 @@ struct EnvironmentSectionView: View {
     @Binding var statefulSelection: Set<ZenzStatefulModelVariant>
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Environment")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                Text("Adjust logging and choose which Core ML models stay resident before running cases. All toggles start off to avoid loading every package.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Toggle(isOn: $verbose) {
-                Text("Verbose generation logs")
-                    .font(.body.weight(.semibold))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Verbose generation logs")
+                        .font(.body.weight(.semibold))
+                    Text("Mirrors Core ML generation logs into the console when enabled.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .toggleStyle(.switch)
             .tint(.accentColor)
 
-            Text("Mirrors Core ML generation logs into the console when enabled.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
             Divider()
-
-            Text("Select which Core ML models stay in memory. All toggles start off to avoid loading every package by default.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .padding(.vertical, 6)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Stateless models")
@@ -47,6 +56,7 @@ struct EnvironmentSectionView: View {
             }
 
             Divider()
+                .padding(.vertical, 6)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Stateful models")
@@ -70,6 +80,7 @@ struct EnvironmentSectionView: View {
             }
 
             Divider()
+                .padding(.vertical, 6)
 
             Toggle(isOn: $includeSyncBenchmarks) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -83,6 +94,8 @@ struct EnvironmentSectionView: View {
             .toggleStyle(.switch)
             .tint(.accentColor)
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
     }
 
     private func statelessBinding(for variant: ZenzStatelessModelVariant) -> Binding<Bool> {
