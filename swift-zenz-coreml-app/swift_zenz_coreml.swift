@@ -128,24 +128,24 @@ protocol ZenzStatelessPredicting: AnyObject {
     func logitsAsync(for inputIDs: MLMultiArray) async throws -> MLMultiArray
 }
 
-extension zenz_v1: ZenzStatelessPredicting {
+extension zenz_v3_1: ZenzStatelessPredicting {
     func logits(for inputIDs: MLMultiArray) throws -> MLMultiArray {
-        let input = zenz_v1Input(input_ids: inputIDs)
+        let input = zenz_v3_1Input(input_ids: inputIDs)
         return try prediction(input: input).logits
     }
     func logitsAsync(for inputIDs: MLMultiArray) async throws -> MLMultiArray {
-        let input = zenz_v1Input(input_ids: inputIDs)
+        let input = zenz_v3_1Input(input_ids: inputIDs)
         return try await prediction(input: input).logits
     }
 }
 
-extension zenz_v1_8bit: ZenzStatelessPredicting {
+extension zenz_v3_1_8bit: ZenzStatelessPredicting {
     func logits(for inputIDs: MLMultiArray) throws -> MLMultiArray {
-        let input = zenz_v1_8bitInput(input_ids: inputIDs)
+        let input = zenz_v3_1_8bitInput(input_ids: inputIDs)
         return try prediction(input: input).logits
     }
     func logitsAsync(for inputIDs: MLMultiArray) async throws -> MLMultiArray {
-        let input = zenz_v1_8bitInput(input_ids: inputIDs)
+        let input = zenz_v3_1_8bitInput(input_ids: inputIDs)
         return try await prediction(input: input).logits
     }
 }
@@ -166,18 +166,18 @@ enum ZenzStatelessModelVariant: CaseIterable, Hashable {
     var debugName: String {
         switch self {
         case .standardFP16:
-            return "zenz_v1"
+            return "zenz_v3.1"
         case .compressed8Bit:
-            return "zenz_v1-8bit"
+            return "zenz_v3.1-8bit"
         }
     }
 
     var uiTitle: String {
         switch self {
         case .standardFP16:
-            return "zenz_v1 (FP16 stateless)"
+            return "zenz_v3.1 (FP16 stateless)"
         case .compressed8Bit:
-            return "zenz_v1 (8-bit stateless)"
+            return "zenz_v3.1 (8-bit stateless)"
         }
     }
 
@@ -212,21 +212,21 @@ private func loadCoreMLModelAsync(
 // Load the CoreML model.
 // CoreML 모델을 로드합니다.
 // CoreMLモデルをロードします。
-func loadModel() -> zenz_v1? {
+func loadModel() -> zenz_v3_1? {
     let config = MLModelConfiguration()
-    return try? zenz_v1(configuration: config)
+    return try? zenz_v3_1(configuration: config)
 }
 
-func loadModelAsync() async -> zenz_v1? {
+func loadModelAsync() async -> zenz_v3_1? {
     do {
         let config = MLModelConfiguration()
         let base = try await loadCoreMLModelAsync(
-            from: zenz_v1.urlOfModelInThisBundle,
+            from: zenz_v3_1.urlOfModelInThisBundle,
             configuration: config
         )
-        return try zenz_v1(model: base)
+        return zenz_v3_1(model: base)
     } catch {
-        print("[ModelLoad] Failed to async load zenz_v1: \(error)")
+        print("[ModelLoad] Failed to async load zenz_v3_1: \(error)")
         return nil
     }
 }
@@ -234,21 +234,21 @@ func loadModelAsync() async -> zenz_v1? {
 // Load the compressed 8-bit CoreML model.
 // 8-bit로 압축된 CoreML 모델을 로드합니다.
 // 8-bit に圧縮された Core ML モデルを読み込みます。
-func loadModel8Bit() -> zenz_v1_8bit? {
+func loadModel8Bit() -> zenz_v3_1_8bit? {
     let config = MLModelConfiguration()
-    return try? zenz_v1_8bit(configuration: config)
+    return try? zenz_v3_1_8bit(configuration: config)
 }
 
-func loadModel8BitAsync() async -> zenz_v1_8bit? {
+func loadModel8BitAsync() async -> zenz_v3_1_8bit? {
     do {
         let config = MLModelConfiguration()
         let base = try await loadCoreMLModelAsync(
-            from: zenz_v1_8bit.urlOfModelInThisBundle,
+            from: zenz_v3_1_8bit.urlOfModelInThisBundle,
             configuration: config
         )
-        return try zenz_v1_8bit(model: base)
+        return zenz_v3_1_8bit(model: base)
     } catch {
-        print("[ModelLoad] Failed to async load zenz_v1_8bit: \(error)")
+        print("[ModelLoad] Failed to async load zenz_v3_1_8bit: \(error)")
         return nil
     }
 }
@@ -298,56 +298,56 @@ func resolveStatelessModelAsync(
 func loadStatelessModelAsync(variant: ZenzStatelessModelVariant = .standardFP16) async -> (any ZenzStatelessPredicting)? {
     await resolveStatelessModelAsync(variant: variant)
 }
-func loadStatefulModel() -> zenz_v1_stateful? {
+func loadStatefulModel() -> zenz_v3_1_stateful? {
     do {
         let config = MLModelConfiguration()
         // Load the stateful Core ML model and enable ANE/GPU/CPU (automatic).
         // 상태를 가지는 Core ML 모델을 로드하고 ANE/GPU/CPU 자동 선택을 활성화합니다.
         // ステートフルな Core ML モデルを読み込み、ANE/GPU/CPU の自動選択を有効にします。
         config.computeUnits = .cpuAndGPU
-        return try zenz_v1_stateful(configuration: config)
+        return try zenz_v3_1_stateful(configuration: config)
     } catch let error {
         print(error)
         return nil
     }
 }
 
-func loadStatefulModelAsync() async -> zenz_v1_stateful? {
+func loadStatefulModelAsync() async -> zenz_v3_1_stateful? {
     do {
         let config = MLModelConfiguration()
         config.computeUnits = .cpuAndGPU
         let base = try await loadCoreMLModelAsync(
-            from: zenz_v1_stateful.urlOfModelInThisBundle,
+            from: zenz_v3_1_stateful.urlOfModelInThisBundle,
             configuration: config
         )
-        return try zenz_v1_stateful(model: base)
+        return zenz_v3_1_stateful(model: base)
     } catch {
-        print("[ModelLoad] Failed to async load zenz_v1_stateful: \(error)")
+        print("[ModelLoad] Failed to async load zenz_v3_1_stateful: \(error)")
         return nil
     }
 }
-func loadStatefulModel8Bit() -> zenz_v1_stateful_8bit? {
+func loadStatefulModel8Bit() -> zenz_v3_1_stateful_8bit? {
     do {
         let config = MLModelConfiguration()
         config.computeUnits = .cpuAndGPU
-        return try zenz_v1_stateful_8bit(configuration: config)
+        return try zenz_v3_1_stateful_8bit(configuration: config)
     } catch let error {
         print(error)
         return nil
     }
 }
 
-func loadStatefulModel8BitAsync() async -> zenz_v1_stateful_8bit? {
+func loadStatefulModel8BitAsync() async -> zenz_v3_1_stateful_8bit? {
     do {
         let config = MLModelConfiguration()
         config.computeUnits = .cpuAndGPU
         let base = try await loadCoreMLModelAsync(
-            from: zenz_v1_stateful_8bit.urlOfModelInThisBundle,
+            from: zenz_v3_1_stateful_8bit.urlOfModelInThisBundle,
             configuration: config
         )
-        return try zenz_v1_stateful_8bit(model: base)
+        return zenz_v3_1_stateful_8bit(model: base)
     } catch {
-        print("[ModelLoad] Failed to async load zenz_v1_stateful_8bit: \(error)")
+        print("[ModelLoad] Failed to async load zenz_v3_1_stateful_8bit: \(error)")
         return nil
     }
 }
@@ -368,18 +368,18 @@ enum ZenzStatefulModelVariant: CaseIterable, Hashable {
     var debugName: String {
         switch self {
         case .standardFP16:
-            return "zenz_v1_stateful"
+            return "zenz_v3.1_stateful"
         case .compressed8Bit:
-            return "zenz_v1_stateful-8bit"
+            return "zenz_v3.1_stateful-8bit"
         }
     }
 
     var uiTitle: String {
         switch self {
         case .standardFP16:
-            return "zenz_v1_stateful (FP16)"
+            return "zenz_v3.1_stateful (FP16)"
         case .compressed8Bit:
-            return "zenz_v1_stateful (8-bit)"
+            return "zenz_v3.1_stateful (8-bit)"
         }
     }
 
@@ -394,14 +394,14 @@ enum ZenzStatefulModelVariant: CaseIterable, Hashable {
 }
 
 enum ZenzStatefulModelHandle {
-    case fp16(zenz_v1_stateful)
-    case compressed8Bit(zenz_v1_stateful_8bit)
+    case fp16(zenz_v3_1_stateful)
+    case compressed8Bit(zenz_v3_1_stateful_8bit)
 }
 
 private extension ZenzStatefulModelHandle {
     func withModel<Result>(
-        fp16: (zenz_v1_stateful) -> Result,
-        bit8: (zenz_v1_stateful_8bit) -> Result
+        fp16: (zenz_v3_1_stateful) -> Result,
+        bit8: (zenz_v3_1_stateful_8bit) -> Result
     ) -> Result {
         switch self {
         case .fp16(let model):
@@ -412,8 +412,8 @@ private extension ZenzStatefulModelHandle {
     }
 
     func withModel<Result>(
-        fp16: (zenz_v1_stateful) async -> Result,
-        bit8: (zenz_v1_stateful_8bit) async -> Result
+        fp16: (zenz_v3_1_stateful) async -> Result,
+        bit8: (zenz_v3_1_stateful_8bit) async -> Result
     ) async -> Result {
         switch self {
         case .fp16(let model):
@@ -425,8 +425,8 @@ private extension ZenzStatefulModelHandle {
 }
 func resolveStatefulModel(
     variant: ZenzStatefulModelVariant,
-    loadFP16: () -> zenz_v1_stateful? = { loadStatefulModel() },
-    load8Bit: () -> zenz_v1_stateful_8bit? = { loadStatefulModel8Bit() }
+    loadFP16: () -> zenz_v3_1_stateful? = { loadStatefulModel() },
+    load8Bit: () -> zenz_v3_1_stateful_8bit? = { loadStatefulModel8Bit() }
 ) -> ZenzStatefulModelHandle? {
     switch variant {
     case .standardFP16:
@@ -450,8 +450,8 @@ func resolveStatefulModel(
 
 func resolveStatefulModelAsync(
     variant: ZenzStatefulModelVariant,
-    loadFP16: @escaping () async -> zenz_v1_stateful? = { await loadStatefulModelAsync() },
-    load8Bit: @escaping () async -> zenz_v1_stateful_8bit? = { await loadStatefulModel8BitAsync() }
+    loadFP16: @escaping () async -> zenz_v3_1_stateful? = { await loadStatefulModelAsync() },
+    load8Bit: @escaping () async -> zenz_v3_1_stateful_8bit? = { await loadStatefulModel8BitAsync() }
 ) async -> ZenzStatefulModelHandle? {
     switch variant {
     case .standardFP16:
@@ -476,7 +476,7 @@ func resolveStatefulModelAsync(
 func loadStatefulModelHandleAsync(variant: ZenzStatefulModelVariant = .standardFP16) async -> ZenzStatefulModelHandle? {
     await resolveStatefulModelAsync(variant: variant)
 }
-private func warmupStatefulModel(_ model: zenz_v1_stateful) async {
+private func warmupStatefulModel(_ model: zenz_v3_1_stateful) async {
     if
         let warmupInputIDs = try? MLMultiArray(shape: [1, 1], dataType: .int32),
         let warmupMask = try? MLMultiArray(shape: [1, 1], dataType: .int32)
@@ -484,7 +484,7 @@ private func warmupStatefulModel(_ model: zenz_v1_stateful) async {
         warmupInputIDs[0] = 0
         warmupMask[0] = 1
 
-        let warmupInput = zenz_v1_statefulInput(
+        let warmupInput = zenz_v3_1_statefulInput(
             input_ids: warmupInputIDs,
             attention_mask: warmupMask
         )
@@ -497,7 +497,7 @@ private func warmupStatefulModel(_ model: zenz_v1_stateful) async {
         print("[Stateful Warmup] Skipped: failed to allocate MLMultiArray.")
     }
 }
-private func warmupStatefulModel(_ model: zenz_v1_stateful_8bit) async {
+private func warmupStatefulModel(_ model: zenz_v3_1_stateful_8bit) async {
     if
         let warmupInputIDs = try? MLMultiArray(shape: [1, 1], dataType: .int32),
         let warmupMask = try? MLMultiArray(shape: [1, 1], dataType: .int32)
@@ -505,7 +505,7 @@ private func warmupStatefulModel(_ model: zenz_v1_stateful_8bit) async {
         warmupInputIDs[0] = 0
         warmupMask[0] = 1
 
-        let warmupInput = zenz_v1_stateful_8bitInput(
+        let warmupInput = zenz_v3_1_stateful_8bitInput(
             input_ids: warmupInputIDs,
             attention_mask: warmupMask
         )
@@ -533,7 +533,7 @@ func loadTokenizer() async -> Tokenizer? {
         fatalError(error.localizedDescription)
     }
 }
-func predictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer) -> [String] {
+func predictStateful(text: String, model: zenz_v3_1_stateful, tokenizer: Tokenizer) -> [String] {
     let state = model.makeState()
     
     // Encode the input text using the tokenizer.
@@ -567,7 +567,7 @@ func predictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer
     // Use Core ML stateful input type.
     // Core ML stateful 입력 타입을 사용합니다.
     // Core MLのステートフル入力タイプを使用します。
-    let input = zenz_v1_statefulInput(input_ids: inputArray, attention_mask: attentionMask)
+    let input = zenz_v3_1_statefulInput(input_ids: inputArray, attention_mask: attentionMask)
     
     // Perform stateful prediction.
     // 상태를 가지는 예측을 수행합니다.
@@ -594,7 +594,7 @@ func predictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer
     let predictedTexts = predictedTokenIDs.map { tokenizer.decode(tokens: $0) }
     return predictedTexts
 }
-func predictStateful(text: String, model: zenz_v1_stateful_8bit, tokenizer: Tokenizer) -> [String] {
+func predictStateful(text: String, model: zenz_v3_1_stateful_8bit, tokenizer: Tokenizer) -> [String] {
     let state = model.makeState()
 
     let inputIDs = tokenizer.encode(text: text)
@@ -619,7 +619,7 @@ func predictStateful(text: String, model: zenz_v1_stateful_8bit, tokenizer: Toke
         attentionMask[index] = 1
     }
 
-    let input = zenz_v1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
+    let input = zenz_v3_1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
 
     let output = try? model.prediction(input: input, using: state)
     let logits = output?.logits
@@ -739,7 +739,7 @@ func predict(text: String, model: any ZenzStatelessPredicting, tokenizer: Tokeni
 // Perform greedy token-by-token generation using the stateful Core ML model and its KV cache.
 // Stateful Core ML 모델과 KV 캐시를 사용해서 Greedy Search로 토큰을 한 단계씩 생성합니다.
 // ステートフルな Core ML モデルと KV キャッシュを使い、Greedy サーチでトークンを一つずつ生成します。
-func greedyPredictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer) -> String {
+func greedyPredictStateful(text: String, model: zenz_v3_1_stateful, tokenizer: Tokenizer) -> String {
     let state = model.makeState()
     var predictedTokenIDs = tokenizer.encode(text: text)
     generationLog("[Stateful Greedy] inputIDs: \(text) \(predictedTokenIDs)")
@@ -770,7 +770,7 @@ func greedyPredictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tok
             attentionMask[index] = 1
         }
 
-        let input = zenz_v1_statefulInput(input_ids: inputArray, attention_mask: attentionMask)
+        let input = zenz_v3_1_statefulInput(input_ids: inputArray, attention_mask: attentionMask)
         guard let output = try? model.prediction(input: input, using: state) else {
             print("[Stateful Greedy] Prediction failed")
             break
@@ -793,7 +793,7 @@ func greedyPredictStateful(text: String, model: zenz_v1_stateful, tokenizer: Tok
     let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
     return predictedText.replacingOccurrences(of: "[PAD]", with: "")
 }
-func greedyPredictStateful(text: String, model: zenz_v1_stateful_8bit, tokenizer: Tokenizer) -> String {
+func greedyPredictStateful(text: String, model: zenz_v3_1_stateful_8bit, tokenizer: Tokenizer) -> String {
     let state = model.makeState()
     var predictedTokenIDs = tokenizer.encode(text: text)
     generationLog("[Stateful Greedy][8-bit] inputIDs: \(text) \(predictedTokenIDs)")
@@ -824,7 +824,7 @@ func greedyPredictStateful(text: String, model: zenz_v1_stateful_8bit, tokenizer
             attentionMask[index] = 1
         }
 
-        let input = zenz_v1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
+        let input = zenz_v3_1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
         guard let output = try? model.prediction(input: input, using: state) else {
             print("[Stateful Greedy][8-bit] Prediction failed")
             break
@@ -846,7 +846,7 @@ func greedyPredictStateful(text: String, model: zenz_v1_stateful_8bit, tokenizer
     let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
     return predictedText.replacingOccurrences(of: "[PAD]", with: "")
 }
-func greedyPredictStatefulAsync(text: String, model: zenz_v1_stateful, tokenizer: Tokenizer) async -> String {
+func greedyPredictStatefulAsync(text: String, model: zenz_v3_1_stateful, tokenizer: Tokenizer) async -> String {
     let state = model.makeState()
     var predictedTokenIDs = tokenizer.encode(text: text)
     generationLog("[Stateful Greedy] inputIDs: \(text) \(predictedTokenIDs)")
@@ -877,7 +877,7 @@ func greedyPredictStatefulAsync(text: String, model: zenz_v1_stateful, tokenizer
             attentionMask[index] = 1
         }
 
-        let input = zenz_v1_statefulInput(input_ids: inputArray, attention_mask: attentionMask)
+        let input = zenz_v3_1_statefulInput(input_ids: inputArray, attention_mask: attentionMask)
         guard let output = try? await model.prediction(input: input, using: state) else {
             print("[Stateful Greedy] Prediction failed")
             break
@@ -899,7 +899,7 @@ func greedyPredictStatefulAsync(text: String, model: zenz_v1_stateful, tokenizer
     let predictedText = tokenizer.decode(tokens: predictedTokenIDs)
     return predictedText.replacingOccurrences(of: "[PAD]", with: "")
 }
-func greedyPredictStatefulAsync(text: String, model: zenz_v1_stateful_8bit, tokenizer: Tokenizer) async -> String {
+func greedyPredictStatefulAsync(text: String, model: zenz_v3_1_stateful_8bit, tokenizer: Tokenizer) async -> String {
     let state = model.makeState()
     var predictedTokenIDs = tokenizer.encode(text: text)
     generationLog("[Stateful Greedy][8-bit Async] inputIDs: \(text) \(predictedTokenIDs)")
@@ -930,7 +930,7 @@ func greedyPredictStatefulAsync(text: String, model: zenz_v1_stateful_8bit, toke
             attentionMask[index] = 1
         }
 
-        let input = zenz_v1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
+        let input = zenz_v3_1_stateful_8bitInput(input_ids: inputArray, attention_mask: attentionMask)
         guard let output = try? await model.prediction(input: input, using: state) else {
             print("[Stateful Greedy][8-bit Async] Prediction failed")
             break

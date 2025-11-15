@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - `swift-zenz-coreml-app/` contains the SwiftUI entry points (`swift_zenz_coreml_appApp.swift`, `ContentView.swift`) plus `swift_zenz_coreml.swift`, which owns Core ML inference, tokenizer wiring, and log helpers.
-- `Resources/` stores the `zenz_v1*.mlpackage` artifacts, tokenizer assets, and conversion scripts; keep new assets here so `Bundle.main.resourceURL` continues to resolve them.
+- `Resources/` stores the `zenz_v3.1*.mlpackage` artifacts, tokenizer assets, and conversion scripts; keep new assets here so `Bundle.main.resourceURL` continues to resolve them.
 - Tests live in `swift-zenz-coreml-appTests/` (Swift Testing) and `swift-zenz-coreml-appUITests/` (XCTest), while device notes belong under `benchmarks/`.
 
 ## Build, Test, and Development Commands
