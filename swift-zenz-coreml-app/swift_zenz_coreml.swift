@@ -197,16 +197,7 @@ private func loadCoreMLModelAsync(
     from url: URL,
     configuration: MLModelConfiguration
 ) async throws -> MLModel {
-    try await withCheckedThrowingContinuation { continuation in
-        MLModel.load(contentsOf: url, configuration: configuration) { result in
-            switch result {
-            case .success(let model):
-                continuation.resume(returning: model)
-            case .failure(let error):
-                continuation.resume(throwing: error)
-            }
-        }
-    }
+    return try await MLModel.load(contentsOf: url, configuration: configuration)
 }
 
 // Load the CoreML model.
