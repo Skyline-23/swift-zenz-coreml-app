@@ -4,7 +4,7 @@ import Charts
 private enum FloatingHUDConstants {
     static let compactIconSize: CGFloat = 20
     static let compactIconPadding: CGFloat = 1
-    static let compactSpacing: CGFloat = 8
+    static let compactSpacing: CGFloat = 4
     static let compactHorizontalPadding: CGFloat = 8
     static let compactVerticalPadding: CGFloat = 10
     static let expandedHeight: CGFloat = 260
@@ -23,7 +23,7 @@ struct FloatingMemoryHUDOverlay: View {
     @State private var cardIsExpanded = false
     @State private var storedCenter: CGPoint? = nil
     @State private var dragOffset: CGSize = .zero
-    @State private var compactMetrics = HUDCompactMetrics()
+    @State private var compactState = CompactCardState()
     @State private var hasBeenDragged = false
     @State private var currentAnchor: HorizontalAnchor = .right
     private let verticalMargin: CGFloat = 0
@@ -34,11 +34,11 @@ struct FloatingMemoryHUDOverlay: View {
     private var attachmentAnimation: Animation { FloatingHUDConstants.attachmentAnimation }
     
     var body: some View {
-        let baseResolvedSize = resolvedCardSize(in: containerSize, expanded: cardIsExpanded)
-        let compactWidth = max(compactMetrics.intrinsicWidth, compactMetrics.minimumWidth)
-        let collapsedWidth = compactWidth > 0 ? min(compactWidth, baseResolvedSize.width) : baseResolvedSize.width
-        let displayedWidth = cardIsExpanded ? baseResolvedSize.width : collapsedWidth
-        let cardSize = CGSize(width: displayedWidth, height: baseResolvedSize.height)
+        let compactSize = compactState.compactSize
+        let baseResolvedSize = cardIsExpanded
+            ? resolvedCardSize(in: containerSize, expanded: true)
+            : compactSize
+        let cardSize = baseResolvedSize
         let baseCenter = storedCenter ?? defaultCenter(for: cardSize, in: containerSize)
         let clampedCenter = snapCenter(baseCenter, cardSize: cardSize, in: containerSize, anchorOverride: nil)
         let dragAdjustedCenter = CGPoint(
@@ -50,7 +50,7 @@ struct FloatingMemoryHUDOverlay: View {
             monitor: monitor,
             isExpanded: cardIsExpanded,
             targetSize: cardSize,
-            compactMetrics: $compactMetrics,
+            compactState: $compactState,
             namespace: hudNamespace
         )
         .contentShape(Rectangle())
@@ -66,9 +66,13 @@ struct FloatingMemoryHUDOverlay: View {
             }
         }
         .frame(
-            width: displayedWidth,
+            width: cardSize.width,
             height: cardSize.height,
             alignment: cardIsExpanded ? .topLeading : .topTrailing
+        )
+        .background(
+            RoundedRectangle(cornerRadius: cardIsExpanded ? 24 : 16, style: .continuous)
+                .fill(Color.orange.opacity(0.12))
         )
         .position(dragAdjustedCenter)
         .animation(FloatingHUDConstants.dramaticCollapseSpring, value: cardIsExpanded)
@@ -77,13 +81,22 @@ struct FloatingMemoryHUDOverlay: View {
             storedCenter = clampedCenter
             currentAnchor = .right
         }
-        .onChange(of: compactMetrics.labelSize) { _ in
-            guard !cardIsExpanded, !hasBeenDragged else { return }
-            let nextCard = resolvedCardSize(in: containerSize, expanded: false)
-            storedCenter = snapCenter(defaultCenter(for: nextCard, in: containerSize), cardSize: nextCard, in: containerSize, anchorOverride: .right)
+        .onChange(of: cardSize.width) { _ in
+            guard !cardIsExpanded else { return }
+            let anchor = currentAnchor
+            storedCenter = snapCenter(defaultCenter(for: cardSize, in: containerSize), cardSize: cardSize, in: containerSize, anchorOverride: anchor)
+        }
+        .onChange(of: compactState.compactSize) { newSize in
+            guard !cardIsExpanded else { return }
+            let anchor = currentAnchor
+            withAnimation(attachmentAnimation) {
+                storedCenter = snapCenter(defaultCenter(for: newSize, in: containerSize), cardSize: newSize, in: containerSize, anchorOverride: anchor)
+            }
         }
         .onChange(of: containerSize) { newValue in
-            let nextCard = resolvedCardSize(in: newValue, expanded: cardIsExpanded)
+            let collapsedWidth = resolvedCompactWidth(in: newValue)
+            let collapsed = CGSize(width: collapsedWidth, height: compactState.measuredHeight)
+            let nextCard = cardIsExpanded ? resolvedCardSize(in: newValue, expanded: true) : collapsed
             let reference = hasBeenDragged ? (storedCenter ?? defaultCenter(for: nextCard, in: newValue)) : defaultCenter(for: nextCard, in: newValue)
             withAnimation(attachmentAnimation) {
                 let anchor = hasBeenDragged ? currentAnchor : .right
@@ -128,7 +141,7 @@ struct FloatingMemoryHUDOverlay: View {
             let width = min(availableWidth, maxExpandedWidth)
             return CGSize(width: width, height: expandedHeight)
         } else {
-            return CGSize(width: resolvedCompactWidth(in: container), height: resolvedCompactHeight)
+            return compactState.compactSize
         }
     }
     
@@ -182,35 +195,35 @@ private struct FlexibleMemoryHUDView: View {
     @ObservedObject var monitor: MemoryUsageMonitor
     let isExpanded: Bool
     let targetSize: CGSize
-    @Binding var compactMetrics: HUDCompactMetrics
+    @Binding var compactState: CompactCardState
     let namespace: Namespace.ID
-    
-    var body: some View {
-        let cornerRadius: CGFloat = isExpanded ? 28 : 18
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        let stackAlignment: Alignment = isExpanded ? .topLeading : .topTrailing
         
-        ZStack(alignment: stackAlignment) {
-            if isExpanded {
-                expandedContent
-            } else {
+        var body: some View {
+            let cornerRadius: CGFloat = isExpanded ? 28 : 18
+            let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            let stackAlignment: Alignment = isExpanded ? .topLeading : .topTrailing
+            
+            ZStack(alignment: stackAlignment) {
+                if isExpanded {
+                    expandedContent
+                } else {
                 compactContentView(isProxy: false)
             }
         }
         .animation(FloatingHUDConstants.dramaticCollapseSpring, value: isExpanded)
         .frame(
-            width: isExpanded ? targetSize.width : nil,
-            height: isExpanded ? targetSize.height : nil,
+            width: targetSize.width,
+            height: targetSize.height,
             alignment: stackAlignment
         )
         .liquidGlassTile(tint: .cyan.opacity(isExpanded ? 0.85 : 0.75), shape: shape)
         .shadow(color: Color.black.opacity(isExpanded ? 0.25 : 0.18), radius: isExpanded ? 22 : 14, x: 0, y: isExpanded ? 16 : 10)
         .foregroundStyle(.primary)
-        .onPreferenceChange(CompactContentSizePreferenceKey.self) { newSize in
-            updateCompactContentSize(newSize)
+        .onChange(of: compactState.observedContent) { newSize in
+            updateContentSize(newSize)
         }
-        .onPreferenceChange(CompactLabelSizePreferenceKey.self) { newSize in
-            updateCompactLabelSize(newSize)
+        .onChange(of: compactState.observedLabel) { newSize in
+            updateLabelSize(newSize)
         }
     }
     
@@ -221,14 +234,8 @@ private struct FlexibleMemoryHUDView: View {
         }
         .padding(.horizontal, FloatingHUDConstants.compactHorizontalPadding)
         .padding(.vertical, FloatingHUDConstants.compactVerticalPadding)
-        .fixedSize(horizontal: false, vertical: true)
-        .background(
-            GeometryReader { proxy in
-                Color.clear
-                    .allowsHitTesting(false)
-                    .preference(key: CompactContentSizePreferenceKey.self, value: proxy.size)
-            }
-        )
+        .fixedSize()
+        .background(SizeReader(size: contentSizeBinding))
     }
     private var expandedContent: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -284,13 +291,7 @@ private struct FlexibleMemoryHUDView: View {
                 .fixedSize(horizontal: true, vertical: false)
                 .conditionalMatchedGeometryEffect(id: "hud-value-number", in: namespace, isProxy: !applyMatchedEffects)
         }
-        .background(
-            GeometryReader { proxy in
-                Color.clear
-                    .allowsHitTesting(false)
-                    .preference(key: CompactLabelSizePreferenceKey.self, value: proxy.size)
-            }
-        )
+        .background(SizeReader(size: labelSizeBinding))
         .overlay(alignment: .bottomLeading) {
             Text("Current memory usage")
                 .font(.caption.weight(.semibold))
@@ -322,44 +323,71 @@ private struct FlexibleMemoryHUDView: View {
         .matchedGeometryEffect(id: "hud-value-stack", in: namespace)
     }
     
-    private func updateCompactLabelSize(_ newSize: CGSize) {
-        var metrics = compactMetrics
-        guard metrics.updateLabelSizeIfNeeded(newSize) else { return }
-        var transaction = Transaction()
-        transaction.animation = nil
-        withTransaction(transaction) {
-            compactMetrics = metrics
+    private var contentSizeBinding: Binding<CGSize> {
+        Binding<CGSize>(
+            get: { compactState.observedContent },
+            set: { updateContentSize($0) }
+        )
+    }
+    
+    private var labelSizeBinding: Binding<CGSize> {
+        Binding<CGSize>(
+            get: { compactState.observedLabel },
+            set: { updateLabelSize($0) }
+        )
+    }
+    
+    private func updateLabelSize(_ newSize: CGSize) {
+        guard newSize.width > 0, newSize.height > 0 else { return }
+        var state = compactState
+        state.updateLabelSize(newSize)
+        compactState = state
+    }
+    
+    private func updateContentSize(_ newSize: CGSize) {
+        guard newSize.width > 0, newSize.height > 0 else { return }
+        var state = compactState
+        state.updateContentSize(newSize)
+        compactState = state
+    }
+}
+
+private struct CompactCardState: Equatable {
+    var metrics: HUDCompactMetrics = HUDCompactMetrics()
+    var observedContent: CGSize = .zero
+    var observedLabel: CGSize = .zero
+    
+    var measuredWidth: CGFloat {
+        let metricWidth = metrics.contentSize.width > 0 ? metrics.contentSize.width : metrics.intrinsicWidth
+        let observedWidth = observedContent.width
+        return max(metricWidth, max(observedWidth, metrics.minimumWidth))
+    }
+    
+    var measuredHeight: CGFloat {
+        if observedContent.height > 0 {
+            return max(observedContent.height, metrics.intrinsicHeight)
+        }
+        return metrics.intrinsicHeight
+    }
+    
+    var compactSize: CGSize {
+        CGSize(width: measuredWidth, height: measuredHeight)
+    }
+    
+    mutating func updateLabelSize(_ newSize: CGSize) {
+        _ = metrics.updateLabelSizeIfNeeded(newSize)
+        if newSize.width > 0, newSize.height > 0 {
+            observedLabel = newSize
         }
     }
     
-    private func updateCompactContentSize(_ newSize: CGSize) {
-        var metrics = compactMetrics
-        guard metrics.updateContentSizeIfNeeded(newSize) else { return }
-        #if DEBUG
-        print("HUD compact content size updated:", newSize)
-        #endif
-        var transaction = Transaction()
-        transaction.animation = nil
-        withTransaction(transaction) {
-            compactMetrics = metrics
+    mutating func updateContentSize(_ newSize: CGSize) {
+        _ = metrics.updateContentSizeIfNeeded(newSize)
+        if newSize.width > 0, newSize.height > 0 {
+            observedContent = newSize
         }
     }
 }
-
-private struct CompactLabelSizePreferenceKey: PreferenceKey {
-    static var defaultValue: CGSize = .zero
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
-        value = nextValue()
-    }
-}
-
-private struct CompactContentSizePreferenceKey: PreferenceKey {
-    static var defaultValue: CGSize = .zero
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
-        value = nextValue()
-    }
-}
-
 
 private struct HUDCompactMetrics: Equatable {
     var labelSize: CGSize = CGSize(width: 80, height: 24)
@@ -371,14 +399,14 @@ private struct HUDCompactMetrics: Equatable {
     
     var intrinsicWidth: CGFloat {
         if contentSize.width > 0 {
-            return contentSize.width
+            return max(contentSize.width, minimumWidth)
         }
-        return fallbackWidthFromLabel
+        return max(fallbackWidthFromLabel, minimumWidth)
     }
     
     var intrinsicHeight: CGFloat {
         if contentSize.height > 0 {
-            return contentSize.height
+            return max(contentSize.height, fallbackHeightFromLabel)
         }
         return fallbackHeightFromLabel
     }
@@ -434,12 +462,17 @@ private extension View {
 
 private extension FloatingMemoryHUDOverlay {
     func resolvedCompactWidth(in container: CGSize) -> CGFloat {
-        let measured = max(compactMetrics.intrinsicWidth, compactMetrics.minimumWidth)
-        let available = max(container.width - (horizontalMargin * 2), compactMetrics.minimumWidth)
-        return min(measured, available)
+        clampCompactWidth(compactState.measuredWidth, in: container)
+    }
+    
+    func clampCompactWidth(_ measured: CGFloat, in container: CGSize) -> CGFloat {
+        let minWidth = compactState.metrics.minimumWidth
+        let available = max(container.width - (horizontalMargin * 2), minWidth)
+        let normalized = max(measured, minWidth)
+        return min(normalized, available)
     }
     
     var resolvedCompactHeight: CGFloat {
-        compactMetrics.intrinsicHeight
+        compactState.measuredHeight
     }
 }
