@@ -1,6 +1,15 @@
 {
-  "originHash" : "b034296473ea2233597a81477370f7ac5f9a30c457cd54dc07a9c147bdb32a2f",
+  "originHash" : "085cfb1e1610a6e9cb4c4f116c449b63dbc280fa2c994ca483b702486ac27994",
   "pins" : [
+    {
+      "identity" : "floatinghud",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Skyline-23/FloatingHUD",
+      "state" : {
+        "revision" : "745923a05f778eee58f836f9a342042df5eb0448",
+        "version" : "1.0.4"
+      }
+    },
     {
       "identity" : "swift-collections",
       "kind" : "remoteSourceControl",

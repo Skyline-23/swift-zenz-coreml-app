@@ -123,8 +123,9 @@ struct ContentView: View {
     private func benchmarkAndHUDLayer(in containerSize: CGSize) -> some View {
         ZStack(alignment: .topLeading) {
             benchmarkList
-            FloatingMemoryHUDOverlay(
-                monitor: memoryMonitor, containerSize: containerSize
+            MemoryHUDOverlay(
+                monitor: memoryMonitor,
+                containerSize: containerSize
             )
         }
     }

@@ -10,6 +10,9 @@
 		D03050432EC469CB00E9E19A /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = D03050422EC469CB00E9E19A /* Hub */; };
 		D03050452EC469CB00E9E19A /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = D03050442EC469CB00E9E19A /* Tokenizers */; };
 		D03050472EC469CB00E9E19A /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = D03050462EC469CB00E9E19A /* Transformers */; };
+		D0B35ECB2ECD9EA90094999D /* FloatingHUD in Frameworks */ = {isa = PBXBuildFile; productRef = D0B35ECA2ECD9EA90094999D /* FloatingHUD */; };
+		D0B35ECD2ECD9ED70094999D /* FloatingHUD in Frameworks */ = {isa = PBXBuildFile; productRef = D0B35ECC2ECD9ED70094999D /* FloatingHUD */; };
+		D0EF030A2ECDC23A00017502 /* FloatingHUD in Frameworks */ = {isa = PBXBuildFile; productRef = D0EF03092ECDC23A00017502 /* FloatingHUD */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,6 +61,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0B35ECD2ECD9ED70094999D /* FloatingHUD in Frameworks */,
+				D0B35ECB2ECD9EA90094999D /* FloatingHUD in Frameworks */,
+				D0EF030A2ECDC23A00017502 /* FloatingHUD in Frameworks */,
 				D03050472EC469CB00E9E19A /* Transformers in Frameworks */,
 				D03050452EC469CB00E9E19A /* Tokenizers in Frameworks */,
 				D03050432EC469CB00E9E19A /* Hub in Frameworks */,
@@ -124,6 +130,9 @@
 				D03050422EC469CB00E9E19A /* Hub */,
 				D03050442EC469CB00E9E19A /* Tokenizers */,
 				D03050462EC469CB00E9E19A /* Transformers */,
+				D0B35ECA2ECD9EA90094999D /* FloatingHUD */,
+				D0B35ECC2ECD9ED70094999D /* FloatingHUD */,
+				D0EF03092ECDC23A00017502 /* FloatingHUD */,
 			);
 			productName = "swift-zenz-coreml-app";
 			productReference = D03050052EC4693900E9E19A /* swift-zenz-coreml-app.app */;
@@ -209,6 +218,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */,
+				D0EF03082ECDC23A00017502 /* XCRemoteSwiftPackageReference "FloatingHUD" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D03050062EC4693900E9E19A /* Products */;
@@ -607,6 +617,14 @@
 				minimumVersion = 1.1.2;
 			};
 		};
+		D0EF03082ECDC23A00017502 /* XCRemoteSwiftPackageReference "FloatingHUD" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Skyline-23/FloatingHUD";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -624,6 +642,19 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */;
 			productName = Transformers;
+		};
+		D0B35ECA2ECD9EA90094999D /* FloatingHUD */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FloatingHUD;
+		};
+		D0B35ECC2ECD9ED70094999D /* FloatingHUD */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FloatingHUD;
+		};
+		D0EF03092ECDC23A00017502 /* FloatingHUD */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D0EF03082ECDC23A00017502 /* XCRemoteSwiftPackageReference "FloatingHUD" */;
+			productName = FloatingHUD;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

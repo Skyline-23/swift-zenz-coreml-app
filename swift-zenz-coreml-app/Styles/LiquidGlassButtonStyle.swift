@@ -80,10 +80,7 @@ private struct ModernGlassTile<S: Shape>: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .glassEffect(
-                .regular
-                    .tint(tint.opacity(0.35))
-            , in: shape)
+            .glassEffect(.regular.tint(tint.opacity(0.35)), in: shape)
             .overlay {
                 shape
                     .stroke(Color.white.opacity(0.06), lineWidth: 1)
