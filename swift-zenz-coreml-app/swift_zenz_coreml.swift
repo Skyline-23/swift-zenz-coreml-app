@@ -525,15 +525,20 @@ func loadStatefulModelHandleAsync(
 // トークナイザーモデルをロードします。
 func loadTokenizer() async -> Tokenizer? {
     guard
-        let modelFolder = Bundle.main.resourceURL,
-        FileManager.default.fileExists(atPath: modelFolder.appendingPathComponent("tokenizer/tokenizer.json").path)
+        let resourcesFolder = Bundle.main.resourceURL
     else {
-        print("[Tokenizer] tokenizer.json missing from bundle Resources.")
+        print("[Tokenizer] Bundle resource URL is missing.")
+        return nil
+    }
+
+    let tokenizerFolder = resourcesFolder.appendingPathComponent("tokenizer", isDirectory: true)
+    guard FileManager.default.fileExists(atPath: tokenizerFolder.appendingPathComponent("tokenizer.json").path) else {
+        print("[Tokenizer] tokenizer.json missing from \(tokenizerFolder.path).")
         return nil
     }
 
     do {
-        return try await AutoTokenizer.from(modelFolder: modelFolder)
+        return try await AutoTokenizer.from(modelFolder: tokenizerFolder)
     } catch {
         print("[Tokenizer] Failed to load bundled tokenizer: \(error)")
         return nil
@@ -794,7 +799,10 @@ func makeBenchmarkEnvironment(config: ModelLoadConfiguration) async -> Benchmark
     }
 
     let tokenizer = await loadTokenizer()
-    guard let tokenizer else { fatalError("tokenizer not found") }
+    guard let tokenizer else {
+        print("[BenchmarkEnvironment] Failed: tokenizer not found.")
+        return nil
+    }
 
     var stateless: [ZenzStatelessModelVariant: any ZenzStatelessPredicting] = [:]
     for variant in ZenzStatelessModelVariant.allCases where config.stateless.contains(variant) {
