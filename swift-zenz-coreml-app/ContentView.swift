@@ -44,10 +44,10 @@ struct ContentView: View {
                 }
                 .onChange(of: verbose) { GenerationLogConfig.enableVerbose = $0 }
                 .onChange(of: selectedStatelessModels) { _ in
-                    Task { await prepareEnvironmentIfNeeded(force: true) }
+                    Task { @MainActor in invalidateLoadedEnvironment() }
                 }
                 .onChange(of: selectedStatefulModels) { _ in
-                    Task { await prepareEnvironmentIfNeeded(force: true) }
+                    Task { @MainActor in invalidateLoadedEnvironment() }
                 }
                 .onChange(of: outputEntries.count) { newCount in
                     let visibleCount = min(newCount, 5)
@@ -102,7 +102,6 @@ struct ContentView: View {
                 if enableMemoryMonitoring {
                     await memoryMonitor.start()
                 }
-                await prepareEnvironmentIfNeeded(force: false)
                 await ensureDefaultCasesIfNeeded()
             }
             .onChange(of: scenePhase) { phase in
@@ -324,6 +323,13 @@ struct ContentView: View {
         log.removeAll()
         selectedOutputPage = 0
         outputCardResetToken &+= 1
+    }
+
+    @MainActor
+    private func invalidateLoadedEnvironment() {
+        env = nil
+        loadedConfiguration = .empty
+        appendLog("[Init] Model selection changed. Environment will load on the next run.\n")
     }
     
     private func runAll() async {

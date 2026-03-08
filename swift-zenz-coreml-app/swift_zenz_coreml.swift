@@ -578,6 +578,17 @@ func loadStatefulModelHandleAsync(
 // 토크나이저 모델을 로드합니다.
 // トークナイザーモデルをロードします。
 func loadTokenizer() async -> Tokenizer? {
+    if
+        let modelFolder = Bundle.main.resourceURL,
+        FileManager.default.fileExists(atPath: modelFolder.appendingPathComponent("tokenizer/tokenizer.json").path)
+    {
+        do {
+            return try await AutoTokenizer.from(modelFolder: modelFolder)
+        } catch {
+            print("[Tokenizer] Local bundle tokenizer load failed, falling back to HF: \(error)")
+        }
+    }
+
     do {
         return try await AutoTokenizer.from(pretrained: ZenzHubConfig.repoID)
     } catch {
