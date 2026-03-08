@@ -28,10 +28,10 @@ enum ZenzHubConfig {
     static let repoID = "Skyline23/zenz-coreml"
     static let repo = Hub.Repo(id: repoID)
 
-    static let decodeFP16Pattern = "Artifacts/decode/zenz-stateful-decode-fp16.mlpackage/**"
-    static let decode8BitPattern = "Artifacts/decode/zenz-stateful-decode-8bit.mlpackage/**"
-    static let prefillFP16Pattern = "Artifacts/prefill/zenz-prefill-fp16.mlpackage/**"
-    static let prefill8BitPattern = "Artifacts/prefill/zenz-prefill-8bit.mlpackage/**"
+    static let statelessFP16Pattern = "Artifacts/stateless/zenz-stateless-fp16.mlpackage/**"
+    static let stateless8BitPattern = "Artifacts/stateless/zenz-stateless-8bit.mlpackage/**"
+    static let statefulFP16Pattern = "Artifacts/stateful/zenz-stateful-fp16.mlpackage/**"
+    static let stateful8BitPattern = "Artifacts/stateful/zenz-stateful-8bit.mlpackage/**"
     static let tokenizerPattern = "tokenizer/*"
     static let manifestPattern = "hf_manifest.json"
 }
@@ -165,12 +165,6 @@ private final class GenericStatelessCoreMLModel: ZenzStatelessPredicting {
     }
 }
 
-private enum ZenzStateName: String, CaseIterable {
-    case keyCache
-    case valueCache
-    case pastLen
-}
-
 private final class GenericStatefulCoreMLModel {
     let model: MLModel
 
@@ -243,35 +237,7 @@ private func makeAttentionMask(length: Int) -> MLMultiArray? {
     return array
 }
 
-private func copyState(from source: MLState, to destination: MLState) {
-    for stateName in ZenzStateName.allCases {
-        source.withMultiArray(for: stateName.rawValue) { src in
-            destination.withMultiArray(for: stateName.rawValue) { dst in
-                let count = min(src.count, dst.count)
-                switch src.dataType {
-                case .float16:
-                    let srcPtr = src.dataPointer.assumingMemoryBound(to: UInt16.self)
-                    let dstPtr = dst.dataPointer.assumingMemoryBound(to: UInt16.self)
-                    for index in 0..<count {
-                        dstPtr[index] = srcPtr[index]
-                    }
-                case .float32:
-                    let srcPtr = src.dataPointer.assumingMemoryBound(to: Float.self)
-                    let dstPtr = dst.dataPointer.assumingMemoryBound(to: Float.self)
-                    for index in 0..<count {
-                        dstPtr[index] = srcPtr[index]
-                    }
-                default:
-                    for index in 0..<count {
-                        dst[index] = src[index]
-                    }
-                }
-            }
-        }
-    }
-}
-
-private final class BundledStatefulRunner: ZenzStatefulBenchmarkingModel {
+private final class StatefulRunner: ZenzStatefulBenchmarkingModel {
     private let model: GenericStatefulCoreMLModel
     private let eosTokenID: Int32 = 3
     private let maxSeqLength = 128
@@ -292,91 +258,45 @@ private final class BundledStatefulRunner: ZenzStatefulBenchmarkingModel {
     func greedyPredict(text: String, tokenizer: Tokenizer) -> String {
         let state = model.makeState()
         var predictedTokenIDs = tokenizer.encode(text: text)
+        guard
+            let prefillInput = makeInt32Matrix(tokens: predictedTokenIDs),
+            let prefillMask = makeAttentionMask(length: predictedTokenIDs.count),
+            let prefillLogits = try? model.logits(inputIDs: prefillInput, attentionMask: prefillMask, using: state)
+        else {
+            return ""
+        }
 
+        var nextTokenID = argmaxLogitsRow(prefillLogits, batch: 0, time: prefillLogits.shape[1].intValue - 1)
         while predictedTokenIDs.count < maxSeqLength {
-            guard
-                let inputArray = makeInt32Matrix(tokens: predictedTokenIDs),
-                let attentionMask = makeAttentionMask(length: predictedTokenIDs.count),
-                let logits = try? model.logits(inputIDs: inputArray, attentionMask: attentionMask, using: state)
-            else {
-                break
-            }
-
-            let lastTimeIndex = logits.shape[1].intValue - 1
-            let nextTokenID = argmaxLogitsRow(logits, batch: 0, time: lastTimeIndex)
             if Int32(nextTokenID) == eosTokenID {
                 break
             }
             predictedTokenIDs.append(nextTokenID)
-        }
 
+            guard
+                let decodeInput = makeInt32Matrix(tokens: [nextTokenID]),
+                let decodeMask = makeAttentionMask(length: 1),
+                let decodeLogits = try? model.logits(inputIDs: decodeInput, attentionMask: decodeMask, using: state)
+            else {
+                break
+            }
+            nextTokenID = argmaxLogitsRow(decodeLogits, batch: 0, time: decodeLogits.shape[1].intValue - 1)
+        }
         return tokenizer.decode(tokens: predictedTokenIDs).replacingOccurrences(of: "[PAD]", with: "")
     }
 
     func greedyPredictAsync(text: String, tokenizer: Tokenizer) async -> String {
         let state = model.makeState()
         var predictedTokenIDs = tokenizer.encode(text: text)
-
-        while predictedTokenIDs.count < maxSeqLength {
-            guard
-                let inputArray = makeInt32Matrix(tokens: predictedTokenIDs),
-                let attentionMask = makeAttentionMask(length: predictedTokenIDs.count),
-                let logits = try? await model.logitsAsync(inputIDs: inputArray, attentionMask: attentionMask, using: state)
-            else {
-                break
-            }
-
-            let lastTimeIndex = logits.shape[1].intValue - 1
-            let nextTokenID = argmaxLogitsRow(logits, batch: 0, time: lastTimeIndex)
-            if Int32(nextTokenID) == eosTokenID {
-                break
-            }
-            predictedTokenIDs.append(nextTokenID)
-        }
-
-        return tokenizer.decode(tokens: predictedTokenIDs).replacingOccurrences(of: "[PAD]", with: "")
-    }
-}
-
-private final class HubPrefillDecodeRunner: ZenzStatefulBenchmarkingModel {
-    private let prefillModel: GenericStatefulCoreMLModel
-    private let decodeModel: GenericStatefulCoreMLModel
-    private let eosTokenID: Int32 = 3
-    private let maxSeqLength = 128
-
-    init(prefillModel: GenericStatefulCoreMLModel, decodeModel: GenericStatefulCoreMLModel) {
-        self.prefillModel = prefillModel
-        self.decodeModel = decodeModel
-    }
-
-    func warmup() async {
-        guard
-            let input = makeInt32Matrix(tokens: [0]),
-            let mask = makeAttentionMask(length: 1)
-        else { return }
-
-        let prefillState = prefillModel.makeState()
-        let decodeState = decodeModel.makeState()
-        _ = try? await prefillModel.logitsAsync(inputIDs: input, attentionMask: mask, using: prefillState)
-        copyState(from: prefillState, to: decodeState)
-        _ = try? await decodeModel.logitsAsync(inputIDs: input, attentionMask: mask, using: decodeState)
-    }
-
-    func greedyPredict(text: String, tokenizer: Tokenizer) -> String {
-        let prefillState = prefillModel.makeState()
-        let decodeState = decodeModel.makeState()
-        var predictedTokenIDs = tokenizer.encode(text: text)
         guard !predictedTokenIDs.isEmpty else { return "" }
 
         guard
             let prefillInput = makeInt32Matrix(tokens: predictedTokenIDs),
             let prefillMask = makeAttentionMask(length: predictedTokenIDs.count),
-            let prefillLogits = try? prefillModel.logits(inputIDs: prefillInput, attentionMask: prefillMask, using: prefillState)
+            let prefillLogits = try? await model.logitsAsync(inputIDs: prefillInput, attentionMask: prefillMask, using: state)
         else {
             return ""
         }
-
-        copyState(from: prefillState, to: decodeState)
 
         var nextTokenID = argmaxLogitsRow(prefillLogits, batch: 0, time: prefillLogits.shape[1].intValue - 1)
         while predictedTokenIDs.count < maxSeqLength {
@@ -388,43 +308,7 @@ private final class HubPrefillDecodeRunner: ZenzStatefulBenchmarkingModel {
             guard
                 let decodeInput = makeInt32Matrix(tokens: [nextTokenID]),
                 let decodeMask = makeAttentionMask(length: 1),
-                let decodeLogits = try? decodeModel.logits(inputIDs: decodeInput, attentionMask: decodeMask, using: decodeState)
-            else {
-                break
-            }
-            nextTokenID = argmaxLogitsRow(decodeLogits, batch: 0, time: decodeLogits.shape[1].intValue - 1)
-        }
-
-        return tokenizer.decode(tokens: predictedTokenIDs).replacingOccurrences(of: "[PAD]", with: "")
-    }
-
-    func greedyPredictAsync(text: String, tokenizer: Tokenizer) async -> String {
-        let prefillState = prefillModel.makeState()
-        let decodeState = decodeModel.makeState()
-        var predictedTokenIDs = tokenizer.encode(text: text)
-        guard !predictedTokenIDs.isEmpty else { return "" }
-
-        guard
-            let prefillInput = makeInt32Matrix(tokens: predictedTokenIDs),
-            let prefillMask = makeAttentionMask(length: predictedTokenIDs.count),
-            let prefillLogits = try? await prefillModel.logitsAsync(inputIDs: prefillInput, attentionMask: prefillMask, using: prefillState)
-        else {
-            return ""
-        }
-
-        copyState(from: prefillState, to: decodeState)
-
-        var nextTokenID = argmaxLogitsRow(prefillLogits, batch: 0, time: prefillLogits.shape[1].intValue - 1)
-        while predictedTokenIDs.count < maxSeqLength {
-            if Int32(nextTokenID) == eosTokenID {
-                break
-            }
-            predictedTokenIDs.append(nextTokenID)
-
-            guard
-                let decodeInput = makeInt32Matrix(tokens: [nextTokenID]),
-                let decodeMask = makeAttentionMask(length: 1),
-                let decodeLogits = try? await decodeModel.logitsAsync(inputIDs: decodeInput, attentionMask: decodeMask, using: decodeState)
+                let decodeLogits = try? await model.logitsAsync(inputIDs: decodeInput, attentionMask: decodeMask, using: state)
             else {
                 break
             }
@@ -568,7 +452,7 @@ func loadStatelessModelAsync(variant: ZenzStatelessModelVariant = .standardFP16)
         load8Bit: { await loadBundledStatelessModel(resourceName: "zenz_v3.1-8bit") }
     )
 }
-private func loadBundledStatefulRunner(resourceName: String) async -> BundledStatefulRunner? {
+private func loadBundledStatefulRunner(resourceName: String) async -> StatefulRunner? {
     guard let url = Bundle.main.url(forResource: resourceName, withExtension: "mlmodelc") else {
         print("[ModelLoad] Missing bundled model: \(resourceName).mlmodelc")
         return nil
@@ -578,21 +462,18 @@ private func loadBundledStatefulRunner(resourceName: String) async -> BundledSta
         let config = MLModelConfiguration()
         config.computeUnits = .cpuAndGPU
         let model = try await loadCoreMLModelAsync(from: url, configuration: config)
-        return BundledStatefulRunner(model: GenericStatefulCoreMLModel(model: model))
+        return StatefulRunner(model: GenericStatefulCoreMLModel(model: model))
     } catch {
         print("[ModelLoad] Failed to load bundled stateful model \(resourceName): \(error)")
         return nil
     }
 }
 
-private func loadHubPrefillDecodeRunner(fp16: Bool) async -> HubPrefillDecodeRunner? {
+private func loadHubStatefulRunner(fp16: Bool) async -> StatefulRunner? {
     do {
-        let prefillPath = fp16
-            ? "Artifacts/prefill/zenz-prefill-fp16.mlpackage"
-            : "Artifacts/prefill/zenz-prefill-8bit.mlpackage"
-        let decodePath = fp16
-            ? "Artifacts/decode/zenz-stateful-decode-fp16.mlpackage"
-            : "Artifacts/decode/zenz-stateful-decode-8bit.mlpackage"
+        let statefulPath = fp16
+            ? "Artifacts/stateful/zenz-stateful-fp16.mlpackage"
+            : "Artifacts/stateful/zenz-stateful-8bit.mlpackage"
 
         let config = MLModelConfiguration()
         config.computeUnits = .cpuAndGPU
@@ -600,29 +481,21 @@ private func loadHubPrefillDecodeRunner(fp16: Bool) async -> HubPrefillDecodeRun
         let root: URL
         if
             let bundleRoot = Bundle.main.resourceURL,
-            FileManager.default.fileExists(atPath: bundleRoot.appendingPathComponent(prefillPath).path),
-            FileManager.default.fileExists(atPath: bundleRoot.appendingPathComponent(decodePath).path)
+            FileManager.default.fileExists(atPath: bundleRoot.appendingPathComponent(statefulPath).path)
         {
             root = bundleRoot
         } else {
             root = try await ZenzHubSnapshotCache.shared.snapshotURL()
         }
 
-        let prefill = try await loadCoreMLModelAsync(
-            from: root.appendingPathComponent(prefillPath),
-            configuration: config
-        )
-        let decode = try await loadCoreMLModelAsync(
-            from: root.appendingPathComponent(decodePath),
+        let stateful = try await loadCoreMLModelAsync(
+            from: root.appendingPathComponent(statefulPath),
             configuration: config
         )
 
-        return HubPrefillDecodeRunner(
-            prefillModel: GenericStatefulCoreMLModel(model: prefill),
-            decodeModel: GenericStatefulCoreMLModel(model: decode)
-        )
+        return StatefulRunner(model: GenericStatefulCoreMLModel(model: stateful))
     } catch {
-        print("[ModelLoad] Failed to load HF prefill/decode runner: \(error)")
+        print("[ModelLoad] Failed to load HF stateful runner: \(error)")
         return nil
     }
 }
@@ -630,8 +503,8 @@ private func loadHubPrefillDecodeRunner(fp16: Bool) async -> HubPrefillDecodeRun
 enum ZenzStatefulModelVariant: CaseIterable, Hashable {
     case bundledFP16
     case bundled8Bit
-    case hubPrefillDecodeFP16
-    case hubPrefillDecode8Bit
+    case hubStatefulFP16
+    case hubStateful8Bit
 
     var labelSuffix: String {
         switch self {
@@ -639,10 +512,10 @@ enum ZenzStatefulModelVariant: CaseIterable, Hashable {
             return " [Stateful FP16]"
         case .bundled8Bit:
             return " [Stateful 8-bit]"
-        case .hubPrefillDecodeFP16:
-            return " [HF Prefill+Decode FP16]"
-        case .hubPrefillDecode8Bit:
-            return " [HF Prefill+Decode 8-bit]"
+        case .hubStatefulFP16:
+            return " [HF Stateful FP16]"
+        case .hubStateful8Bit:
+            return " [HF Stateful 8-bit]"
         }
     }
 
@@ -652,10 +525,10 @@ enum ZenzStatefulModelVariant: CaseIterable, Hashable {
             return "bundled_stateful_fp16"
         case .bundled8Bit:
             return "bundled_stateful_8bit"
-        case .hubPrefillDecodeFP16:
-            return "hf_prefill_decode_fp16"
-        case .hubPrefillDecode8Bit:
-            return "hf_prefill_decode_8bit"
+        case .hubStatefulFP16:
+            return "hf_stateful_fp16"
+        case .hubStateful8Bit:
+            return "hf_stateful_8bit"
         }
     }
 
@@ -665,10 +538,10 @@ enum ZenzStatefulModelVariant: CaseIterable, Hashable {
             return "Bundled zenz_v3.1_stateful (FP16)"
         case .bundled8Bit:
             return "Bundled zenz_v3.1_stateful (8-bit)"
-        case .hubPrefillDecodeFP16:
-            return "HF prefill+decode (FP16)"
-        case .hubPrefillDecode8Bit:
-            return "HF prefill+decode (8-bit)"
+        case .hubStatefulFP16:
+            return "HF stateful (FP16)"
+        case .hubStateful8Bit:
+            return "HF stateful (8-bit)"
         }
     }
 
@@ -678,26 +551,26 @@ enum ZenzStatefulModelVariant: CaseIterable, Hashable {
             return "Legacy single-model stateful benchmark path using bundled resources."
         case .bundled8Bit:
             return "Legacy single-model stateful benchmark path with bundled 8-bit weights."
-        case .hubPrefillDecodeFP16:
-            return "Downloads the HF prefill/decode pair and benchmarks the split FP16 pipeline."
-        case .hubPrefillDecode8Bit:
-            return "Downloads the HF prefill/decode pair and benchmarks the split 8-bit pipeline."
+        case .hubStatefulFP16:
+            return "Downloads the HF single stateful model and runs cached token-by-token generation."
+        case .hubStateful8Bit:
+            return "Downloads the HF single stateful 8-bit model and runs cached token-by-token generation."
         }
     }
 }
 
 func loadStatefulModelHandleAsync(
-    variant: ZenzStatefulModelVariant = .hubPrefillDecodeFP16
+    variant: ZenzStatefulModelVariant = .hubStatefulFP16
 ) async -> (any ZenzStatefulBenchmarkingModel)? {
     switch variant {
     case .bundledFP16:
         return await loadBundledStatefulRunner(resourceName: "zenz_v3.1_stateful")
     case .bundled8Bit:
         return await loadBundledStatefulRunner(resourceName: "zenz_v3.1_stateful-8bit")
-    case .hubPrefillDecodeFP16:
-        return await loadHubPrefillDecodeRunner(fp16: true)
-    case .hubPrefillDecode8Bit:
-        return await loadHubPrefillDecodeRunner(fp16: false)
+    case .hubStatefulFP16:
+        return await loadHubStatefulRunner(fp16: true)
+    case .hubStateful8Bit:
+        return await loadHubStatefulRunner(fp16: false)
     }
 }
 
@@ -730,14 +603,10 @@ func downloadZenzHubArtifacts(
     if includeTokenizer {
         patterns.append(ZenzHubConfig.tokenizerPattern)
     }
-    if includePrefill {
-        patterns.append(ZenzHubConfig.prefillFP16Pattern)
-        patterns.append(ZenzHubConfig.prefill8BitPattern)
-    }
-    if includeDecode {
-        patterns.append(ZenzHubConfig.decodeFP16Pattern)
-        patterns.append(ZenzHubConfig.decode8BitPattern)
-    }
+    patterns.append(ZenzHubConfig.statelessFP16Pattern)
+    patterns.append(ZenzHubConfig.stateless8BitPattern)
+    patterns.append(ZenzHubConfig.statefulFP16Pattern)
+    patterns.append(ZenzHubConfig.stateful8BitPattern)
 
     return try await Hub.snapshot(
         from: ZenzHubConfig.repo,
@@ -1055,8 +924,8 @@ struct BenchmarkPlanEntry {
             BenchmarkPlanEntry(kind: .stateless(.compressed8Bit)),
             BenchmarkPlanEntry(kind: .stateful(.bundledFP16)),
             BenchmarkPlanEntry(kind: .stateful(.bundled8Bit)),
-            BenchmarkPlanEntry(kind: .stateful(.hubPrefillDecodeFP16)),
-            BenchmarkPlanEntry(kind: .stateful(.hubPrefillDecode8Bit))
+            BenchmarkPlanEntry(kind: .stateful(.hubStatefulFP16)),
+            BenchmarkPlanEntry(kind: .stateful(.hubStateful8Bit))
         ]
     }
 }

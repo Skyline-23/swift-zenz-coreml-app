@@ -8,10 +8,10 @@
 
 - Hugging Face model repo: [Skyline23/zenz-coreml](https://huggingface.co/Skyline23/zenz-coreml)
 - Manifest: [hf_manifest.json](https://huggingface.co/Skyline23/zenz-coreml/blob/main/hf_manifest.json)
-- Prefill FP16: [Artifacts/prefill/zenz-prefill-fp16.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/prefill/zenz-prefill-fp16.mlpackage)
-- Prefill 8-bit: [Artifacts/prefill/zenz-prefill-8bit.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/prefill/zenz-prefill-8bit.mlpackage)
-- Decode FP16: [Artifacts/decode/zenz-stateful-decode-fp16.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/decode/zenz-stateful-decode-fp16.mlpackage)
-- Decode 8-bit: [Artifacts/decode/zenz-stateful-decode-8bit.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/decode/zenz-stateful-decode-8bit.mlpackage)
+- Stateless FP16: [Artifacts/stateless/zenz-stateless-fp16.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateless/zenz-stateless-fp16.mlpackage)
+- Stateless 8-bit: [Artifacts/stateless/zenz-stateless-8bit.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateless/zenz-stateless-8bit.mlpackage)
+- Stateful FP16: [Artifacts/stateful/zenz-stateful-fp16.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateful/zenz-stateful-fp16.mlpackage)
+- Stateful 8-bit: [Artifacts/stateful/zenz-stateful-8bit.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateful/zenz-stateful-8bit.mlpackage)
 
 ## Runtime Fetch Direction
 
@@ -22,7 +22,7 @@ The app is being restructured away from the old `Resources` submodule flow.
 - A build-phase bootstrap now tries to hydrate `Resources/Artifacts`, `Resources/tokenizer`, and `Resources/hf_manifest.json` from the Hugging Face cache before each build.
 - If cached resources already exist, the bootstrap skips network work.
 - If the network is unavailable or the download fails, the build still continues and the app falls back to runtime error messaging when models are missing.
-- Round 1 benchmark numbers remain valid as legacy bundled-model results; new benchmark rounds should measure the HF-backed prefill/decode pipeline separately.
+- Round 1 benchmark numbers remain valid as legacy bundled-model results; new benchmark rounds should measure the HF-backed single-stateful pipeline separately.
 
 ## ベンチマーク (Core ML greedy decoding) / 벤치마크 (Core ML greedy decoding) / Benchmarks (Core ML greedy decoding)
 
@@ -30,4 +30,4 @@ Detailed benchmark material is organized as:
 
 - Legacy Round 1 results: [iPhone 12 details](benchmarks/round1-iPhone12.md)
 - Legacy Round 1 results: [iPhone Air details](benchmarks/round1-iPhoneAir.md)
-- New HF-backed benchmark plan: [Round 2 prefill/decode plan](benchmarks/round2-hf-prefill-decode.md)
+- New HF-backed benchmark plan: [Round 2 single-stateful plan](benchmarks/round2-hf-prefill-decode.md)

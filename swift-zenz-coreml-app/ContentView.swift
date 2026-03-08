@@ -18,7 +18,7 @@ struct ContentView: View {
     @State private var verbose = false
     @State private var includeSyncBenchmarks = false
     @State private var selectedStatelessModels: Set<ZenzStatelessModelVariant> = []
-    @State private var selectedStatefulModels: Set<ZenzStatefulModelVariant> = [.hubPrefillDecodeFP16]
+    @State private var selectedStatefulModels: Set<ZenzStatefulModelVariant> = [.hubStatefulFP16]
     @State private var loadedConfiguration = ModelLoadConfiguration.empty
     @State private var isSharePresented = false
     @State private var showRawLog = false
