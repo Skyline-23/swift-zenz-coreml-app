@@ -1,5 +1,7 @@
 # 第1回 iPhone 12 ベンチマーク結果 / 1회차 iPhone 12 벤치마크 결과 / Round 1 iPhone 12 Benchmark Results
 
+> Legacy round. This document captures the original bundled stateless/stateful model layout before the Hugging Face prefill/decode split.
+
 **Device:** iPhone 12 (A14 Bionic, iOS 26.0.1) — 실기기에서 `swift-zenz-coremlTests` 를 실행하여 **zenz-v1 Core ML 모델의 한 스텝 (greedy decoding 1회)** 호출 시간을 측정 했습니다.  
 각 문장은 **Stateful / Stateless × Sync / Async** 조합으로 디코딩되었으며, 아래에 평균·길이별 요약과 프롬프트별 상세 결과를 표로 정리합니다.
 

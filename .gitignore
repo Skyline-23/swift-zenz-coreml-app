@@ -48,6 +48,7 @@ xcuserdata/
 build/
 DerivedData/
 *.moved-aside
+__pycache__/
 *.pbxuser
 !default.pbxuser
 *.mode1v3
