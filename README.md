@@ -1,8 +1,8 @@
 # Swift-zenz-CoreML-APP
 
-🇯🇵 Swiftで [Skyline23/zenz-coreml](https://huggingface.co/Skyline23/zenz-coreml) の Core ML アーティファクトを扱い、実機で推論性能をベンチマークするためのサンプルリポジトリです。  
-🇰🇷 Swift에서 [Skyline23/zenz-coreml](https://huggingface.co/Skyline23/zenz-coreml) Hugging Face 리포지토리의 Core ML 아티팩트를 다루고, 실기기에서 추론 성능을 벤치마크하기 위한 샘플 리포지토리입니다.  
-🇺🇸 Sample repository for working with the Core ML artifacts published at [Skyline23/zenz-coreml](https://huggingface.co/Skyline23/zenz-coreml) and benchmarking them on real iOS devices.  
+🇯🇵 Swiftで [Skyline23/zenz-coreml](https://huggingface.co/Skyline23/zenz-coreml) の Core ML アーティファクトをビルド時に取り込み、実機で推論性能をベンチマークするためのサンプルリポジトリです。  
+🇰🇷 Swift에서 [Skyline23/zenz-coreml](https://huggingface.co/Skyline23/zenz-coreml) Hugging Face 리포지토리의 Core ML 아티팩트를 빌드 시점에 받아와 번들에 넣고, 실기기에서 추론 성능을 벤치마크하기 위한 샘플 리포지토리입니다.  
+🇺🇸 Sample repository for pulling the Core ML artifacts from [Skyline23/zenz-coreml](https://huggingface.co/Skyline23/zenz-coreml) during the build and benchmarking them on real iOS devices.  
 
 ## Artifact Source
 
@@ -10,19 +10,17 @@
 - Manifest: [hf_manifest.json](https://huggingface.co/Skyline23/zenz-coreml/blob/main/hf_manifest.json)
 - Stateless FP16: [Artifacts/stateless/zenz-stateless-fp16.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateless/zenz-stateless-fp16.mlpackage)
 - Stateless 8-bit: [Artifacts/stateless/zenz-stateless-8bit.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateless/zenz-stateless-8bit.mlpackage)
-- Stateful FP16: [Artifacts/stateful/zenz-stateful-fp16.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateful/zenz-stateful-fp16.mlpackage)
-- Stateful 8-bit: [Artifacts/stateful/zenz-stateful-8bit.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateful/zenz-stateful-8bit.mlpackage)
+- Stateful: [Artifacts/stateful/zenz-stateful-fp16.mlpackage](https://huggingface.co/Skyline23/zenz-coreml/tree/main/Artifacts/stateful/zenz-stateful-fp16.mlpackage)
 
-## Runtime Fetch Direction
+## Build-Time Bootstrap
 
-The app is being restructured away from the old `Resources` submodule flow.
+The app no longer fetches model artifacts at runtime.
 
-- Tokenizers should come from `AutoTokenizer.from(pretrained: "Skyline23/zenz-coreml")` when local assets are unavailable.
-- Core ML artifacts should be downloaded through the `Hub` module from `swift-transformers`, using the Hugging Face repo above as the single source of truth.
-- A build-phase bootstrap now tries to hydrate `Resources/Artifacts`, `Resources/tokenizer`, and `Resources/hf_manifest.json` from the Hugging Face cache before each build.
-- If cached resources already exist, the bootstrap skips network work.
-- If the network is unavailable or the download fails, the build still continues and the app falls back to runtime error messaging when models are missing.
-- Round 1 benchmark numbers remain valid as legacy bundled-model results; new benchmark rounds should measure the HF-backed single-stateful pipeline separately.
+- The Xcode build phase hydrates `Resources/Artifacts`, `Resources/tokenizer`, and `Resources/hf_manifest.json` before compilation.
+- If those files already exist, the bootstrap skips the network step.
+- If the network is unavailable or the download fails, the build still continues.
+- At runtime the app reads only from bundled `Resources`; if the artifacts are missing, the app reports that instead of trying to download them itself.
+- Round 1 benchmark numbers remain valid as legacy bundled-model results; new benchmark rounds measure the single-stateful pipeline staged during the build.
 
 ## ベンチマーク (Core ML greedy decoding) / 벤치마크 (Core ML greedy decoding) / Benchmarks (Core ML greedy decoding)
 

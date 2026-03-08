@@ -18,7 +18,7 @@ struct ContentView: View {
     @State private var verbose = false
     @State private var includeSyncBenchmarks = false
     @State private var selectedStatelessModels: Set<ZenzStatelessModelVariant> = []
-    @State private var selectedStatefulModels: Set<ZenzStatefulModelVariant> = [.hubStatefulFP16]
+    @State private var selectedStatefulModels: Set<ZenzStatefulModelVariant> = []
     @State private var loadedConfiguration = ModelLoadConfiguration.empty
     @State private var isSharePresented = false
     @State private var showRawLog = false
@@ -44,10 +44,16 @@ struct ContentView: View {
                 }
                 .onChange(of: verbose) { GenerationLogConfig.enableVerbose = $0 }
                 .onChange(of: selectedStatelessModels) { _ in
-                    Task { @MainActor in invalidateLoadedEnvironment() }
+                    Task {
+                        await MainActor.run { invalidateLoadedEnvironment() }
+                        await prepareEnvironmentIfNeeded(force: true)
+                    }
                 }
                 .onChange(of: selectedStatefulModels) { _ in
-                    Task { @MainActor in invalidateLoadedEnvironment() }
+                    Task {
+                        await MainActor.run { invalidateLoadedEnvironment() }
+                        await prepareEnvironmentIfNeeded(force: true)
+                    }
                 }
                 .onChange(of: outputEntries.count) { newCount in
                     let visibleCount = min(newCount, 5)

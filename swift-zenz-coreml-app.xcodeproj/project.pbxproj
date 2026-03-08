@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D03050432EC469CB00E9E19A /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = D03050422EC469CB00E9E19A /* Hub */; };
 		D03050452EC469CB00E9E19A /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = D03050442EC469CB00E9E19A /* Tokenizers */; };
 		D03050472EC469CB00E9E19A /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = D03050462EC469CB00E9E19A /* Transformers */; };
 		D0B35ECB2ECD9EA90094999D /* FloatingHUD in Frameworks */ = {isa = PBXBuildFile; productRef = D0B35ECA2ECD9EA90094999D /* FloatingHUD */; };
@@ -66,7 +65,6 @@
 				D0EF030A2ECDC23A00017502 /* FloatingHUD in Frameworks */,
 				D03050472EC469CB00E9E19A /* Transformers in Frameworks */,
 				D03050452EC469CB00E9E19A /* Tokenizers in Frameworks */,
-				D03050432EC469CB00E9E19A /* Hub in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,7 +126,6 @@
 			);
 			name = "swift-zenz-coreml-app";
 			packageProductDependencies = (
-				D03050422EC469CB00E9E19A /* Hub */,
 				D03050442EC469CB00E9E19A /* Tokenizers */,
 				D03050462EC469CB00E9E19A /* Transformers */,
 				D0B35ECA2ECD9EA90094999D /* FloatingHUD */,
@@ -653,11 +650,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		D03050422EC469CB00E9E19A /* Hub */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */;
-			productName = Hub;
-		};
 		D03050442EC469CB00E9E19A /* Tokenizers */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D03050412EC469CB00E9E19A /* XCRemoteSwiftPackageReference "swift-transformers" */;

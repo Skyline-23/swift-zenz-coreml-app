@@ -8,7 +8,6 @@
 import CoreML
 import Tokenizers
 import Foundation
-import Hub
 
 struct BenchmarkResult {
     let label: String
@@ -22,18 +21,6 @@ struct BenchmarkResult {
 // 生成処理でログが出過ぎないように制御するヘルパー。
 enum GenerationLogConfig {
     static var enableVerbose: Bool = false
-}
-
-enum ZenzHubConfig {
-    static let repoID = "Skyline23/zenz-coreml"
-    static let repo = Hub.Repo(id: repoID)
-
-    static let statelessFP16Pattern = "Artifacts/stateless/zenz-stateless-fp16.mlpackage/**"
-    static let stateless8BitPattern = "Artifacts/stateless/zenz-stateless-8bit.mlpackage/**"
-    static let statefulFP16Pattern = "Artifacts/stateful/zenz-stateful-fp16.mlpackage/**"
-    static let stateful8BitPattern = "Artifacts/stateful/zenz-stateful-8bit.mlpackage/**"
-    static let tokenizerPattern = "tokenizer/*"
-    static let manifestPattern = "hf_manifest.json"
 }
 
 func generationLog(_ message: @autoclosure () -> String) {
@@ -319,20 +306,6 @@ private final class StatefulRunner: ZenzStatefulBenchmarkingModel {
     }
 }
 
-private actor ZenzHubSnapshotCache {
-    static let shared = ZenzHubSnapshotCache()
-    private var cachedURL: URL?
-
-    func snapshotURL() async throws -> URL {
-        if let cachedURL {
-            return cachedURL
-        }
-        let url = try await downloadZenzHubArtifacts()
-        cachedURL = url
-        return url
-    }
-}
-
 enum ZenzStatelessModelVariant: CaseIterable, Hashable {
     case standardFP16
     case compressed8Bit
@@ -358,9 +331,9 @@ enum ZenzStatelessModelVariant: CaseIterable, Hashable {
     var uiTitle: String {
         switch self {
         case .standardFP16:
-            return "zenz_v3.1 (FP16 stateless)"
+            return "zenz_3.1 (FP16 stateless)"
         case .compressed8Bit:
-            return "zenz_v3.1 (8-bit stateless)"
+            return "zenz_3.1 (8-bit stateless)"
         }
     }
 
@@ -469,7 +442,7 @@ private func loadBundledStatefulRunner(resourceName: String) async -> StatefulRu
     }
 }
 
-private func loadHubStatefulRunner(fp16: Bool) async -> StatefulRunner? {
+private func loadStatefulRunner(fp16: Bool) async -> StatefulRunner? {
     do {
         let statefulPath = fp16
             ? "Artifacts/stateful/zenz-stateful-fp16.mlpackage"
@@ -478,99 +451,72 @@ private func loadHubStatefulRunner(fp16: Bool) async -> StatefulRunner? {
         let config = MLModelConfiguration()
         config.computeUnits = .cpuAndGPU
 
-        let root: URL
-        if
-            let bundleRoot = Bundle.main.resourceURL,
-            FileManager.default.fileExists(atPath: bundleRoot.appendingPathComponent(statefulPath).path)
-        {
-            root = bundleRoot
-        } else {
-            root = try await ZenzHubSnapshotCache.shared.snapshotURL()
+        guard let bundleRoot = Bundle.main.resourceURL else {
+            print("[ModelLoad] Missing bundle resource URL for stateful model.")
+            return nil
         }
 
         let stateful = try await loadCoreMLModelAsync(
-            from: root.appendingPathComponent(statefulPath),
+            from: bundleRoot.appendingPathComponent(statefulPath),
             configuration: config
         )
 
         return StatefulRunner(model: GenericStatefulCoreMLModel(model: stateful))
     } catch {
-        print("[ModelLoad] Failed to load HF stateful runner: \(error)")
+        print("[ModelLoad] Failed to load bundled stateful runner: \(error)")
         return nil
     }
 }
 
 enum ZenzStatefulModelVariant: CaseIterable, Hashable {
-    case bundledFP16
-    case bundled8Bit
-    case hubStatefulFP16
-    case hubStateful8Bit
+    case statefulFP16
+    case stateful8Bit
 
     var labelSuffix: String {
         switch self {
-        case .bundledFP16:
+        case .statefulFP16:
             return " [Stateful FP16]"
-        case .bundled8Bit:
+        case .stateful8Bit:
             return " [Stateful 8-bit]"
-        case .hubStatefulFP16:
-            return " [HF Stateful FP16]"
-        case .hubStateful8Bit:
-            return " [HF Stateful 8-bit]"
         }
     }
 
     var debugName: String {
         switch self {
-        case .bundledFP16:
-            return "bundled_stateful_fp16"
-        case .bundled8Bit:
-            return "bundled_stateful_8bit"
-        case .hubStatefulFP16:
-            return "hf_stateful_fp16"
-        case .hubStateful8Bit:
-            return "hf_stateful_8bit"
+        case .statefulFP16:
+            return "stateful_fp16"
+        case .stateful8Bit:
+            return "stateful_8bit"
         }
     }
 
     var uiTitle: String {
         switch self {
-        case .bundledFP16:
-            return "Bundled zenz_v3.1_stateful (FP16)"
-        case .bundled8Bit:
-            return "Bundled zenz_v3.1_stateful (8-bit)"
-        case .hubStatefulFP16:
-            return "HF stateful (FP16)"
-        case .hubStateful8Bit:
-            return "HF stateful (8-bit)"
+        case .statefulFP16:
+            return "zenz_3.1 (FP16 stateful)"
+        case .stateful8Bit:
+            return "zenz_3.1 (8-bit stateful)"
         }
     }
 
     var uiDescription: String {
         switch self {
-        case .bundledFP16:
-            return "Legacy single-model stateful benchmark path using bundled resources."
-        case .bundled8Bit:
-            return "Legacy single-model stateful benchmark path with bundled 8-bit weights."
-        case .hubStatefulFP16:
-            return "Downloads the HF single stateful model and runs cached token-by-token generation."
-        case .hubStateful8Bit:
-            return "Downloads the HF single stateful 8-bit model and runs cached token-by-token generation."
+        case .statefulFP16:
+            return "Single cached generation path with full-precision weights."
+        case .stateful8Bit:
+            return "Single cached generation path with smaller 8-bit weights."
         }
     }
 }
 
 func loadStatefulModelHandleAsync(
-    variant: ZenzStatefulModelVariant = .hubStatefulFP16
+    variant: ZenzStatefulModelVariant = .statefulFP16
 ) async -> (any ZenzStatefulBenchmarkingModel)? {
     switch variant {
-    case .bundledFP16:
-        return await loadBundledStatefulRunner(resourceName: "zenz_v3.1_stateful")
-    case .bundled8Bit:
-        return await loadBundledStatefulRunner(resourceName: "zenz_v3.1_stateful-8bit")
-    case .hubStatefulFP16:
-        return await loadHubStatefulRunner(fp16: true)
-    case .hubStateful8Bit:
-        return await loadHubStatefulRunner(fp16: false)
+    case .statefulFP16:
+        return await loadStatefulRunner(fp16: true)
+    case .stateful8Bit:
+        return await loadStatefulRunner(fp16: false)
     }
 }
 
@@ -578,52 +524,20 @@ func loadStatefulModelHandleAsync(
 // 토크나이저 모델을 로드합니다.
 // トークナイザーモデルをロードします。
 func loadTokenizer() async -> Tokenizer? {
-    if
+    guard
         let modelFolder = Bundle.main.resourceURL,
         FileManager.default.fileExists(atPath: modelFolder.appendingPathComponent("tokenizer/tokenizer.json").path)
-    {
-        do {
-            return try await AutoTokenizer.from(modelFolder: modelFolder)
-        } catch {
-            print("[Tokenizer] Local bundle tokenizer load failed, falling back to HF: \(error)")
-        }
+    else {
+        print("[Tokenizer] tokenizer.json missing from bundle Resources.")
+        return nil
     }
 
     do {
-        return try await AutoTokenizer.from(pretrained: ZenzHubConfig.repoID)
+        return try await AutoTokenizer.from(modelFolder: modelFolder)
     } catch {
-        guard let modelFolder = Bundle.main.resourceURL else {
-            fatalError(error.localizedDescription)
-        }
-        do {
-            return try await AutoTokenizer.from(modelFolder: modelFolder)
-        } catch {
-            fatalError(error.localizedDescription)
-        }
+        print("[Tokenizer] Failed to load bundled tokenizer: \(error)")
+        return nil
     }
-}
-
-func downloadZenzHubArtifacts(
-    includePrefill: Bool = true,
-    includeDecode: Bool = true,
-    includeTokenizer: Bool = true,
-    progressHandler: @escaping (Progress) -> Void = { _ in }
-) async throws -> URL {
-    var patterns: [String] = [ZenzHubConfig.manifestPattern]
-
-    if includeTokenizer {
-        patterns.append(ZenzHubConfig.tokenizerPattern)
-    }
-    patterns.append(ZenzHubConfig.statelessFP16Pattern)
-    patterns.append(ZenzHubConfig.stateless8BitPattern)
-    patterns.append(ZenzHubConfig.statefulFP16Pattern)
-    patterns.append(ZenzHubConfig.stateful8BitPattern)
-
-    return try await Hub.snapshot(
-        from: ZenzHubConfig.repo,
-        matching: patterns,
-        progressHandler: progressHandler
-    )
 }
 
 // Perform prediction.
@@ -933,10 +847,8 @@ struct BenchmarkPlanEntry {
         [
             BenchmarkPlanEntry(kind: .stateless(.standardFP16)),
             BenchmarkPlanEntry(kind: .stateless(.compressed8Bit)),
-            BenchmarkPlanEntry(kind: .stateful(.bundledFP16)),
-            BenchmarkPlanEntry(kind: .stateful(.bundled8Bit)),
-            BenchmarkPlanEntry(kind: .stateful(.hubStatefulFP16)),
-            BenchmarkPlanEntry(kind: .stateful(.hubStateful8Bit))
+            BenchmarkPlanEntry(kind: .stateful(.statefulFP16)),
+            BenchmarkPlanEntry(kind: .stateful(.stateful8Bit))
         ]
     }
 }
